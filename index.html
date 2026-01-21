@@ -3,86 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BCNTV - Cartelera Premium</title>
+    <title>BCNTV - Cartelera Interactiva</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* Estilo Alta Gama BCNTV */
+        /* ESTILO PREMIUM BCNTV */
         body { 
-            font-family: 'Segoe UI', Roboto, sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             background: #000000; 
             color: #ffffff; 
             margin: 0; 
             padding: 0;
             text-align: center;
+            overflow-x: hidden;
         }
         
+        /* Cabecera con Logo */
         .header { 
             background: #111111;
-            padding: 20px 0;
-            border-bottom: 2px solid #333;
-            margin-bottom: 20px;
+            padding: 25px 0;
+            border-bottom: 1px solid #222;
+            margin-bottom: 10px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
         .logo {
-            width: 180px; /* Ajuste perfecto para el logo recortado */
+            width: 160px; /* Tamaño optimizado para tu logo recortado */
             height: auto;
+            filter: drop-shadow(0 0 5px rgba(255,255,255,0.1));
         }
 
-        .container { padding: 15px; }
-
-        .card { 
-            background: #1a1a1a; 
-            border-radius: 12px; 
+        .container { 
             padding: 15px; 
-            margin-bottom: 15px; 
-            border: 1px solid #333;
-            text-align: left;
-            box-shadow: 0 4px 10px rgba(255,255,255,0.05);
+            max-width: 500px;
+            margin: 0 auto;
         }
 
-        .time { color: #aaaaaa; font-size: 13px; font-weight: bold; }
-        .event { font-size: 18px; margin: 8px 0; color: #fff; }
-        .channel { color: #ffffff; font-weight: 700; background: #333; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+        /* Tarjetas de Eventos */
+        .card { 
+            background: #161616; 
+            border-radius: 12px; 
+            padding: 16px; 
+            margin-bottom: 12px; 
+            border: 1px solid #282828;
+            text-align: left;
+            transition: transform 0.2s ease;
+        }
 
-        button { 
+        .card:active {
+            transform: scale(0.98);
+            background: #1a1a1a;
+        }
+
+        .event-title { 
+            font-size: 17px; 
+            font-weight: 600; 
+            color: #ffffff;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .event-detail { 
+            font-size: 14px; 
+            color: #aaaaaa; 
+            line-height: 1.4;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Botón de cierre estilo Telegram */
+        .footer-btn { 
             width: 90%; 
             background: #ffffff; 
             color: #000000; 
             border: none; 
-            padding: 15px; 
-            border-radius: 8px; 
+            padding: 14px; 
+            border-radius: 10px; 
             font-weight: bold; 
             font-size: 16px;
-            margin-top: 20px;
+            margin: 20px 0 40px 0;
             cursor: pointer; 
+        }
+
+        /* Mensaje de carga */
+        #loading {
+            color: #555;
+            margin-top: 50px;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
+
     <div class="header">
-        <img src="logo.png" alt="BCNTV Logo" class="logo">
+        <img src="logo.png" alt="BCNTV" class="logo">
     </div>
     
     <div class="container" id="contenedor-eventos">
-        <div class="card">
-            <div class="time">15:00 - ABIERTO DE AUSTRALIA 🎾</div>
-            <div class="event">Final Masculina - Rod Laver Arena</div>
-            <div class="channel">📺 ESPN & STAR+</div>
-        </div>
-
-        <div class="card">
-            <div class="time">21:00 - LALIGA ⚽</div>
-            <div class="event">Real Madrid vs Atlético Madrid</div>
-            <div class="channel">📺 SKY SPORTS</div>
-        </div>
+        <div id="loading">Actualizando cartelera en tiempo real...</div>
     </div>
 
-    <button onclick="Telegram.WebApp.close()">VOLVER AL CHAT</button>
+    <button class="footer-btn" onclick="Telegram.WebApp.close()">VOLVER AL CHAT</button>
 
     <script>
+        // Inicializamos la WebApp
         const tg = window.Telegram.WebApp;
-        tg.expand(); 
-        tg.headerColor = '#111111';
+        tg.expand(); // Expandir para que ocupe toda la pantalla
+        tg.headerColor = '#111111'; // Color de la barra superior de Telegram
+
+        // FUNCIÓN PARA CARGAR DATOS DINÁMICOS
+        async function cargarCartelera() {
+            try {
+                // El archivo eventos.json será generado por tu Bot de Python
+                const respuesta = await fetch('eventos.json?v=' + Date.now()); // Date.now evita que el navegador use caché vieja
+                const eventos = await respuesta.json();
+                
+                const contenedor = document.getElementById('contenedor-eventos');
+                
+                if (eventos.length === 0) {
+                    contenedor.innerHTML = '<div style="color:#555">No hay eventos programados por ahora.</div>';
+                    return;
+                }
+
+                contenedor.innerHTML = ''; // Limpiar mensaje de carga
+
+                eventos.forEach(ev => {
+                    const div = document.createElement('div');
+                    div.className = 'card';
+                    div.innerHTML = `
+                        <span class="event-title">${ev.evento}</span>
+                        <div class="event-detail">${ev.detalle}</div>
+                    `;
+                    contenedor.appendChild(div);
+                });
+
+                // Feedback táctil de Telegram (Vibración suave al cargar)
+                tg.HapticFeedback.impactOccurred('medium');
+
+            } catch (error) {
+                console.error("Error cargando eventos:", error);
+                document.getElementById('loading').innerText = "Cartelera pendiente de actualización.";
+            }
+        }
+
+        // Ejecutar carga al abrir la página
+        cargarCartelera();
     </script>
 </body>
 </html>
