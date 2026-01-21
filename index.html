@@ -3,153 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BCNTV - Cartelera Interactiva</title>
+    <title>BCNTV Premium - Cartelera</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* ESTILO PREMIUM BCNTV */
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            background: #000000; 
-            color: #ffffff; 
-            margin: 0; 
-            padding: 0;
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #000;
+            color: white;
+            margin: 0;
+            padding: 20px;
             text-align: center;
-            overflow-x: hidden;
         }
-        
-        /* Cabecera con Logo */
-        .header { 
-            background: #111111;
-            padding: 25px 0;
-            border-bottom: 1px solid #222;
-            margin-bottom: 10px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+        .header {
+            margin-bottom: 30px;
         }
-
         .logo {
-            width: 160px; /* Tamaño optimizado para tu logo recortado */
-            height: auto;
-            filter: drop-shadow(0 0 5px rgba(255,255,255,0.1));
+            width: 120px;
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
         }
-
-        .container { 
-            padding: 15px; 
+        .container {
             max-width: 500px;
-            margin: 0 auto;
+            margin: auto;
         }
-
-        /* Tarjetas de Eventos */
-        .card { 
-            background: #161616; 
-            border-radius: 12px; 
-            padding: 16px; 
-            margin-bottom: 12px; 
-            border: 1px solid #282828;
+        .card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
             text-align: left;
-            transition: transform 0.2s ease;
+            transition: transform 0.2s;
         }
-
         .card:active {
             transform: scale(0.98);
-            background: #1a1a1a;
         }
-
-        .event-title { 
-            font-size: 17px; 
-            font-weight: 600; 
-            color: #ffffff;
-            margin-bottom: 8px;
+        .evento {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #fff;
             display: block;
+            margin-bottom: 5px;
         }
-
-        .event-detail { 
-            font-size: 14px; 
-            color: #aaaaaa; 
-            line-height: 1.4;
-            display: flex;
-            align-items: center;
-            gap: 5px;
+        .detalle {
+            color: #aaa;
+            font-size: 0.9em;
         }
-
-        /* Botón de cierre estilo Telegram */
-        .footer-btn { 
-            width: 90%; 
-            background: #ffffff; 
-            color: #000000; 
-            border: none; 
-            padding: 14px; 
-            border-radius: 10px; 
-            font-weight: bold; 
-            font-size: 16px;
-            margin: 20px 0 40px 0;
-            cursor: pointer; 
+        .btn-volver {
+            background: white;
+            color: black;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 20px;
+            cursor: pointer;
         }
-
-        /* Mensaje de carga */
-        #loading {
-            color: #555;
-            margin-top: 50px;
-            font-size: 14px;
-        }
+        #loading { color: #888; margin-top: 50px; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <img src="logo.png" alt="BCNTV" class="logo">
-    </div>
-    
-    <div class="container" id="contenedor-eventos">
-        <div id="loading">Actualizando cartelera en tiempo real...</div>
+        <img src="https://raw.githubusercontent.com/bajacousins-lang/kaelus-app/main/logo.png" alt="BCNTV" class="logo">
     </div>
 
-    <button class="footer-btn" onclick="Telegram.WebApp.close()">VOLVER AL CHAT</button>
+    <div class="container" id="cartelera">
+        <div id="loading">Cargando eventos en vivo...</div>
+    </div>
+
+    <button class="btn-volver" onclick="window.Telegram.WebApp.close();">VOLVER AL CHAT</button>
 
     <script>
-        // Inicializamos la WebApp
-        const tg = window.Telegram.WebApp;
-        tg.expand(); // Expandir para que ocupe toda la pantalla
-        tg.headerColor = '#111111'; // Color de la barra superior de Telegram
+        // Inicializar Telegram WebApp
+        const webapp = window.Telegram.WebApp;
+        webapp.expand();
 
-        // FUNCIÓN PARA CARGAR DATOS DINÁMICOS
-        async function cargarCartelera() {
+        async function cargarEventos() {
+            const container = document.getElementById('cartelera');
             try {
-                // El archivo eventos.json será generado por tu Bot de Python
-                const respuesta = await fetch('eventos.json?v=' + Date.now()); // Date.now evita que el navegador use caché vieja
-                const eventos = await respuesta.json();
-                
-                const contenedor = document.getElementById('contenedor-eventos');
-                
+                // Forzamos la carga del archivo JSON que el bot actualiza
+                const response = await fetch('eventos.json?t=' + new Date().getTime());
+                const eventos = await response.json();
+
+                container.innerHTML = '';
+
                 if (eventos.length === 0) {
-                    contenedor.innerHTML = '<div style="color:#555">No hay eventos programados por ahora.</div>';
+                    container.innerHTML = '<div class="card">No hay eventos programados por ahora.</div>';
                     return;
                 }
 
-                contenedor.innerHTML = ''; // Limpiar mensaje de carga
-
                 eventos.forEach(ev => {
-                    const div = document.createElement('div');
-                    div.className = 'card';
-                    div.innerHTML = `
-                        <span class="event-title">${ev.evento}</span>
-                        <div class="event-detail">${ev.detalle}</div>
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <span class="evento">🏆 ${ev.evento}</span>
+                        <span class="detalle">${ev.detalle}</span>
                     `;
-                    contenedor.appendChild(div);
+                    container.appendChild(card);
                 });
 
-                // Feedback táctil de Telegram (Vibración suave al cargar)
-                tg.HapticFeedback.impactOccurred('medium');
-
             } catch (error) {
-                console.error("Error cargando eventos:", error);
-                document.getElementById('loading').innerText = "Cartelera pendiente de actualización.";
+                container.innerHTML = '<div class="card">Cartelera pendiente de actualización.</div>';
+                console.error("Error cargando JSON:", error);
             }
         }
 
-        // Ejecutar carga al abrir la página
-        cargarCartelera();
+        // Ejecutar al cargar la página
+        cargarEventos();
     </script>
 </body>
 </html>
