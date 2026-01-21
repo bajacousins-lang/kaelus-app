@@ -3,35 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kaelus Premium Cartelera</title>
+    <title>BCNTV - Cartelera Premium</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; background: #0f0f0f; color: white; margin: 0; padding: 20px; }
-        .header { text-align: center; color: #ff0000; font-weight: bold; font-size: 24px; margin-bottom: 20px; }
-        .card { background: #1a1a1a; border-radius: 10px; padding: 15px; margin-bottom: 15px; border-left: 5px solid #ff0000; }
-        .time { color: #888; font-size: 12px; }
-        .event { font-size: 18px; margin: 5px 0; }
-        .channel { color: #ffcc00; font-weight: bold; }
-        button { width: 100%; background: #ff0000; color: white; border: none; padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        /* Estilo Alta Gama BCNTV */
+        body { 
+            font-family: 'Segoe UI', Roboto, sans-serif; 
+            background: #000000; 
+            color: #ffffff; 
+            margin: 0; 
+            padding: 0;
+            text-align: center;
+        }
+        
+        .header { 
+            background: #111111;
+            padding: 20px 0;
+            border-bottom: 2px solid #333;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            width: 180px; /* Ajuste perfecto para el logo recortado */
+            height: auto;
+        }
+
+        .container { padding: 15px; }
+
+        .card { 
+            background: #1a1a1a; 
+            border-radius: 12px; 
+            padding: 15px; 
+            margin-bottom: 15px; 
+            border: 1px solid #333;
+            text-align: left;
+            box-shadow: 0 4px 10px rgba(255,255,255,0.05);
+        }
+
+        .time { color: #aaaaaa; font-size: 13px; font-weight: bold; }
+        .event { font-size: 18px; margin: 8px 0; color: #fff; }
+        .channel { color: #ffffff; font-weight: 700; background: #333; padding: 2px 8px; border-radius: 4px; display: inline-block; }
+
+        button { 
+            width: 90%; 
+            background: #ffffff; 
+            color: #000000; 
+            border: none; 
+            padding: 15px; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            font-size: 16px;
+            margin-top: 20px;
+            cursor: pointer; 
+        }
     </style>
 </head>
 <body>
-    <div class="header">KAELUS PLUS</div>
+    <div class="header">
+        <img src="logo.png" alt="BCNTV Logo" class="logo">
+    </div>
     
-    <div id="contenedor-eventos">
+    <div class="container" id="contenedor-eventos">
         <div class="card">
-            <div class="time">1:00 PM - EN VIVO</div>
-            <div class="event">Real Madrid vs Barcelona</div>
-            <div class="channel">📺 ESPN PREMIUM</div>
+            <div class="time">15:00 - ABIERTO DE AUSTRALIA 🎾</div>
+            <div class="event">Final Masculina - Rod Laver Arena</div>
+            <div class="channel">📺 ESPN & STAR+</div>
+        </div>
+
+        <div class="card">
+            <div class="time">21:00 - LALIGA ⚽</div>
+            <div class="event">Real Madrid vs Atlético Madrid</div>
+            <div class="channel">📺 SKY SPORTS</div>
         </div>
     </div>
 
-    <button onclick="Telegram.WebApp.close()">Cerrar Cartelera</button>
+    <button onclick="Telegram.WebApp.close()">VOLVER AL CHAT</button>
 
     <script>
-        // Inicializa la WebApp de Telegram
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Abre la ventana a pantalla completa
+        tg.expand(); 
+        tg.headerColor = '#111111';
     </script>
 </body>
 </html>
