@@ -1,26 +1,32 @@
 [
   {
-    "evento": "Real Madrid vs Barcelona por La Liga"
+    "evento": "Real Madrid vs Barcelona",
+    "categoria": "deporte",
+    "fecha": "2026-01-25 20:00",
+    "link": "https://kaelustvsoporte.com/live1"
   },
   {
-    "evento": "Manchester City vs Arsenal por Premier League"
+    "evento": "Serie: Stranger Things Temporada 5",
+    "categoria": "serie",
+    "fecha": "2026-01-26 18:00",
+    "link": "https://kaelustvsoporte.com/series/stranger5"
   },
   {
-    "evento": "NBA Lakers vs Warriors"
+    "evento": "Película: Avatar 3",
+    "categoria": "pelicula",
+    "fecha": "2026-01-27 21:00",
+    "link": "https://kaelustvsoporte.com/peliculas/avatar3"
   },
   {
-    "evento": "UFC 300 por PPV"
+    "evento": "NBA Lakers vs Warriors",
+    "categoria": "deporte",
+    "fecha": "2026-01-28 19:30",
+    "link": "https://kaelustvsoporte.com/live2"
   },
   {
-    "evento": "Serie: The Last of Us por HBO"
-  },
-  {
-    "evento": "Serie: House of the Dragon por HBO"
-  },
-  {
-    "evento": "Película: Oppenheimer por Streaming"
-  },
-  {
-    "evento": "Película: Dune Parte 2 por Streaming"
+    "evento": "Serie: The Witcher Temporada 4",
+    "categoria": "serie",
+    "fecha": "2026-01-29 20:00",
+    "link": "https://kaelustvsoporte.com/series/witcher4"
   }
 ]
