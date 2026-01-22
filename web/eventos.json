@@ -1,0 +1,22 @@
+[
+    {
+        "evento": "Real Madrid vs Barcelona",
+        "tipo": "deporte",
+        "hora_inicio": "21:00"
+    },
+    {
+        "evento": "Atlético Madrid vs Sevilla",
+        "tipo": "deporte",
+        "hora_inicio": "19:45"
+    },
+    {
+        "evento": "Estreno Película: Avatar 3",
+        "tipo": "pelicula",
+        "hora_inicio": "19:30"
+    },
+    {
+        "evento": "Serie: Stranger Things T5",
+        "tipo": "serie",
+        "hora_inicio": "20:15"
+    }
+]
