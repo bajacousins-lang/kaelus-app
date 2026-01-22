@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "evento": "Real Madrid vs Barcelona por La Liga"
+  },
+  {
+    "evento": "Manchester City vs Arsenal por Premier League"
+  },
+  {
+    "evento": "NBA Lakers vs Warriors"
+  },
+  {
+    "evento": "UFC 300 por PPV"
+  },
+  {
+    "evento": "Serie: The Last of Us por HBO"
+  },
+  {
+    "evento": "Serie: House of the Dragon por HBO"
+  },
+  {
+    "evento": "Película: Oppenheimer por Streaming"
+  },
+  {
+    "evento": "Película: Dune Parte 2 por Streaming"
+  }
+]
