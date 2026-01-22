@@ -14,54 +14,55 @@
             padding: 20px;
             text-align: center;
         }
-        .header {
-            margin-bottom: 30px;
-        }
-        .logo {
-            width: 120px;
-            background: white;
-            padding: 10px;
-            border-radius: 10px;
-        }
-        .container {
-            max-width: 500px;
-            margin: auto;
-        }
+        .header { margin-bottom: 20px; }
+        .logo { width: 100px; background: white; padding: 8px; border-radius: 10px; }
+        .container { max-width: 500px; margin: auto; }
+        
+        /* DISEÑO DE TARJETA MEJORADO */
         .card {
-            background: #1a1a1a;
+            background: #111;
             border: 1px solid #333;
-            border-radius: 15px;
+            border-left: 4px solid #fff; /* Franja lateral de elegancia */
+            border-radius: 12px;
             padding: 15px;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             text-align: left;
-            transition: transform 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
-        .card:active {
-            transform: scale(0.98);
-        }
-        .evento {
+        
+        .evento-titulo {
             font-size: 1.1em;
-            font-weight: bold;
+            font-weight: 800;
             color: #fff;
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #222;
+            padding-bottom: 5px;
         }
-        .detalle {
-            color: #aaa;
+
+        .info-linea {
+            display: flex;
+            align-items: center;
+            margin: 4px 0;
             font-size: 0.9em;
+            color: #ccc;
         }
+
+        .info-linea span { margin-right: 8px; }
+
         .btn-volver {
-            background: white;
-            color: black;
+            background: #fff;
+            color: #000;
             border: none;
-            padding: 15px 30px;
+            padding: 15px;
             border-radius: 10px;
             font-weight: bold;
             width: 100%;
             margin-top: 20px;
             cursor: pointer;
+            text-transform: uppercase;
         }
-        #loading { color: #888; margin-top: 50px; }
+        #loading { color: #555; margin-top: 50px; }
     </style>
 </head>
 <body>
@@ -71,47 +72,76 @@
     </div>
 
     <div class="container" id="cartelera">
-        <div id="loading">Cargando eventos en vivo...</div>
+        <div id="loading">Sincronizando eventos en vivo...</div>
     </div>
 
     <button class="btn-volver" onclick="window.Telegram.WebApp.close();">VOLVER AL CHAT</button>
 
     <script>
-        // Inicializar Telegram WebApp
         const webapp = window.Telegram.WebApp;
         webapp.expand();
+
+        // MOTOR DE FILTRADO PARA LA WEB (Lógica de 5 Niveles)
+        function procesarTextoEvento(texto) {
+            let info = {
+                titulo: texto,
+                horario: "",
+                transmision: ""
+            };
+
+            // 1. Extraer Transmisión (Busca después de "por")
+            if (texto.toLowerCase().includes(" por ")) {
+                let partes = texto.split(/ por /i);
+                info.titulo = partes[0].trim();
+                info.transmision = partes[1].trim();
+            }
+
+            // 2. Extraer Horario (Busca patrones de tiempo)
+            const patronHora = /(\d{1,2}(:\d{2})?\s*(pm|am|p\.m\.|a\.m\.)|a las \d|a la \d)/i;
+            let matchHora = info.titulo.match(patronHora);
+            
+            if (matchHora) {
+                let puntoCorte = info.titulo.indexOf(matchHora[0]);
+                info.horario = info.titulo.substring(puntoCorte).trim();
+                info.titulo = info.titulo.substring(0, puntoCorte).trim();
+            }
+
+            return info;
+        }
 
         async function cargarEventos() {
             const container = document.getElementById('cartelera');
             try {
-                // Forzamos la carga del archivo JSON que el bot actualiza
                 const response = await fetch('eventos.json?t=' + new Date().getTime());
                 const eventos = await response.json();
-
                 container.innerHTML = '';
 
                 if (eventos.length === 0) {
-                    container.innerHTML = '<div class="card">No hay eventos programados por ahora.</div>';
+                    container.innerHTML = '<div class="card">No hay eventos activos.</div>';
                     return;
                 }
 
                 eventos.forEach(ev => {
+                    const datos = procesarTextoEvento(ev.evento);
                     const card = document.createElement('div');
                     card.className = 'card';
+                    
+                    // Construcción visual nivelada
                     card.innerHTML = `
-                        <span class="evento">🏆 ${ev.evento}</span>
-                        <span class="detalle">${ev.detalle}</span>
+                        <div class="evento-titulo">⚔️ ${datos.titulo}</div>
+                        ${datos.horario ? `<div class="info-linea"><span>🕒</span> ${datos.horario}</div>` : ''}
+                        ${datos.transmision ? `<div class="info-linea"><span>📺</span> <b>Transmisión:</b> ${datos.transmision}</div>` : ''}
+                        <div class="info-linea" style="font-size: 0.75em; color: #555;">📍 ${ev.detalle}</div>
                     `;
                     container.appendChild(card);
                 });
 
             } catch (error) {
-                container.innerHTML = '<div class="card">Cartelera pendiente de actualización.</div>';
-                console.error("Error cargando JSON:", error);
+                container.innerHTML = '<div class="card">Cartelera en mantenimiento.</div>';
+                console.error(error);
             }
         }
 
-        // Ejecutar al cargar la página
         cargarEventos();
     </script>
 </body>
