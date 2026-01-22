@@ -1,32 +1,22 @@
 [
-  {
-    "evento": "Real Madrid vs Barcelona",
-    "categoria": "deporte",
-    "fecha": "2026-01-25 20:00",
-    "link": "https://kaelustvsoporte.com/live1"
-  },
-  {
-    "evento": "Serie: Stranger Things Temporada 5",
-    "categoria": "serie",
-    "fecha": "2026-01-26 18:00",
-    "link": "https://kaelustvsoporte.com/series/stranger5"
-  },
-  {
-    "evento": "Película: Avatar 3",
-    "categoria": "pelicula",
-    "fecha": "2026-01-27 21:00",
-    "link": "https://kaelustvsoporte.com/peliculas/avatar3"
-  },
-  {
-    "evento": "NBA Lakers vs Warriors",
-    "categoria": "deporte",
-    "fecha": "2026-01-28 19:30",
-    "link": "https://kaelustvsoporte.com/live2"
-  },
-  {
-    "evento": "Serie: The Witcher Temporada 4",
-    "categoria": "serie",
-    "fecha": "2026-01-29 20:00",
-    "link": "https://kaelustvsoporte.com/series/witcher4"
-  }
+    {
+        "evento": "Real Madrid vs Barcelona",
+        "tipo": "deporte",
+        "hora_inicio": "21:00"
+    },
+    {
+        "evento": "Atlético Madrid vs Sevilla",
+        "tipo": "deporte",
+        "hora_inicio": "19:45"
+    },
+    {
+        "evento": "Estreno Película: Avatar 3",
+        "tipo": "pelicula",
+        "hora_inicio": "19:30"
+    },
+    {
+        "evento": "Serie: Stranger Things T5",
+        "tipo": "serie",
+        "hora_inicio": "20:15"
+    }
 ]
