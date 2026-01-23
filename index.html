@@ -1,30 +1,30 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kaelus Plus BCNTV</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        :root { --bg:#0a0a0a; --card:#161616; --accent-sport:#00ff88; --accent-movie:#ff3e3e; --accent-series:#00e1ff; --text-main:#fff; --text-dim:#888; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 0; user-select: none; }
-        .header { position: sticky; top: 0; z-index: 1000; background: rgba(10, 10, 10, 0.9); backdrop-filter: blur(10px); padding: 15px; border-bottom: 1px solid #222; }
-        #buscador { width: 100%; background: #1e1e1e; border: 1px solid #333; border-radius: 12px; padding: 12px; color: white; outline: none; box-sizing: border-box; }
-        .filter-group { display: flex; gap: 8px; overflow-x: auto; padding-top: 12px; scrollbar-width: none; }
-        .f-btn { background: #222; border: none; color: #888; padding: 8px 18px; border-radius: 20px; font-size: 13px; font-weight: 600; white-space: nowrap; }
-        .f-btn.active { background: white; color: black; }
-        #main-container { padding: 15px; }
-        .card { background: var(--card); border-radius: 18px; margin-bottom: 20px; border: 1px solid #252525; overflow: hidden; position: relative; }
-        .poster-img { width: 100%; aspect-ratio: 2/3; object-fit: cover; background: #222; }
-        .card-content { padding: 15px; }
-        .tag { font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; margin-bottom: 8px; display: inline-block; }
-        .tag-deporte { background: rgba(0,255,136,0.1); color: var(--accent-sport); }
-        .tag-pelicula { background: rgba(255,62,62,0.1); color: var(--accent-movie); }
-        .tag-serie { background: rgba(0,225,255,0.1); color: var(--accent-series); }
-        .title { font-size: 17px; font-weight: 700; padding-right: 40px; }
-        .fav-btn { position: absolute; right: 15px; bottom: 15px; background: none; border: none; font-size: 24px; color: #444; cursor: pointer; }
-        .fav-btn.active { color: #ffcc00; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Kaelus Plus BCNTV</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root { --bg:#0a0a0a; --card:#161616; --accent-sport:#00ff88; --accent-movie:#ff3e3e; --accent-series:#00e1ff; --text-main:#fff; --text-dim:#888; }
+body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 0; user-select: none; }
+.header { position: sticky; top: 0; z-index: 1000; background: rgba(10, 10, 10, 0.9); backdrop-filter: blur(10px); padding: 15px; border-bottom: 1px solid #222; }
+#buscador { width: 100%; background: #1e1e1e; border: 1px solid #333; border-radius: 12px; padding: 12px; color: white; outline: none; box-sizing: border-box; }
+.filter-group { display: flex; gap: 8px; overflow-x: auto; padding-top: 12px; scrollbar-width: none; }
+.f-btn { background: #222; border: none; color: #888; padding: 8px 18px; border-radius: 20px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.f-btn.active { background: white; color: black; }
+#main-container { padding: 15px; }
+.card { background: var(--card); border-radius: 18px; margin-bottom: 20px; border: 1px solid #252525; overflow: hidden; position: relative; }
+.poster-img { width: 100%; aspect-ratio: 2/3; object-fit: cover; background: #222; }
+.card-content { padding: 15px; }
+.tag { font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; margin-bottom: 8px; display: inline-block; }
+.tag-deporte { background: rgba(0,255,136,0.1); color: var(--accent-sport); }
+.tag-pelicula { background: rgba(255,62,62,0.1); color: var(--accent-movie); }
+.tag-serie { background: rgba(0,225,255,0.1); color: var(--accent-series); }
+.title { font-size: 17px; font-weight: 700; padding-right: 40px; }
+.fav-btn { position: absolute; right: 15px; bottom: 15px; background: none; border: none; font-size: 24px; color: #444; cursor: pointer; }
+.fav-btn.active { color: #ffcc00; }
+</style>
 </head>
 <body>
 
@@ -43,80 +43,100 @@
 </div>
 
 <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
-    tg.ready();
+const tg = window.Telegram.WebApp;
+tg.expand();
+tg.ready();
 
-    // IMPORTANTE: Asegúrate de que esta URL sea la de tu Render
-    const API_URL = "https://kaelus-bot.onrender.com/api/data";
+// URL del backend Render
+const API_URL = "https://kaelus-bot.onrender.com/api/data";
+const API_FAV = "https://kaelus-bot.onrender.com/api/favoritos";
 
-    let fullData = [];
-    let currentFiltro = "todos";
+let fullData = [];
+let currentFiltro = "todos";
+let favoritosUsuario = [];
 
-    async function cargarDatos() {
-        try {
-            const res = await fetch(API_URL);
-            const data = await res.json();
-            
-            // Unimos todo para la Búsqueda Global
-            fullData = [
-                ...(data.deportes || []).map(i => ({...i, tipo: "deporte"})),
-                ...(data.peliculas || []).map(i => ({...i, tipo: "pelicula"})),
-                ...(data.series || []).map(i => ({...i, tipo: "serie"}))
-            ];
-            render();
-        } catch (e) {
-            document.getElementById("main-container").innerHTML = "<p style='text-align:center;color:gray;'>Error de conexión con el Bot</p>";
-        }
+// Cargar favoritos desde backend usando user_id
+async function cargarFavoritos(uid) {
+    try {
+        const res = await fetch(`${API_FAV}/${uid}`);
+        favoritosUsuario = await res.json();
+    } catch (e) {
+        console.log("No se pudieron cargar favoritos desde backend:", e);
+        favoritosUsuario = [];
     }
+}
 
-    function setFiltro(tipo, btn) {
-        currentFiltro = tipo;
-        document.querySelectorAll(".f-btn").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
+// Cargar datos de la API y renderizar
+async function cargarDatos() {
+    const uid = tg.initDataUnsafe?.user?.id; // Telegram WebApp user_id
+    await cargarFavoritos(uid);
+
+    try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        
+        fullData = [
+            ...(data.deportes || []).map(i => ({...i, tipo: "deporte"})),
+            ...(data.peliculas || []).map(i => ({...i, tipo: "pelicula"})),
+            ...(data.series || []).map(i => ({...i, tipo: "serie"}))
+        ];
         render();
+    } catch (e) {
+        document.getElementById("main-container").innerHTML = "<p style='text-align:center;color:gray;'>Error de conexión con el Bot</p>";
+    }
+}
+
+function setFiltro(tipo, btn) {
+    currentFiltro = tipo;
+    document.querySelectorAll(".f-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    render();
+}
+
+function toggleFavorito(titulo, btn) {
+    btn.classList.toggle('active');
+    tg.sendData(JSON.stringify({ action: "fav", title: titulo }));
+    tg.HapticFeedback.impactOccurred('medium');
+
+    // Actualizar favoritos localmente
+    if (btn.classList.contains('active') && !favoritosUsuario.includes(titulo)) favoritosUsuario.push(titulo);
+    else favoritosUsuario = favoritosUsuario.filter(t => t !== titulo);
+}
+
+function render() {
+    const container = document.getElementById("main-container");
+    const query = document.getElementById("buscador").value.toLowerCase();
+    container.innerHTML = "";
+
+    const filtrados = fullData.filter(i => 
+        i.titulo.toLowerCase().includes(query) && 
+        (currentFiltro === "todos" || i.tipo === currentFiltro)
+    );
+
+    if (filtrados.length === 0) {
+        container.innerHTML = "<p style='text-align:center;color:gray;margin-top:50px;'>No hay resultados</p>";
+        return;
     }
 
-    function toggleFavorito(titulo, btn) {
-        btn.classList.toggle('active');
-        // Enviamos el favorito al bot para guardarlo
-        tg.sendData(JSON.stringify({ action: "fav", title: titulo }));
-        tg.HapticFeedback.impactOccurred('medium');
-    }
+    filtrados.forEach(i => {
+        const card = document.createElement("div");
+        card.className = "card";
+        const imgHTML = i.poster ? `<img src="${i.poster}" class="poster-img" loading="lazy">` : "";
+        const isFav = favoritosUsuario.includes(i.titulo) ? "active" : "";
 
-    function render() {
-        const container = document.getElementById("main-container");
-        const query = document.getElementById("buscador").value.toLowerCase();
-        container.innerHTML = "";
+        card.innerHTML = `
+            ${imgHTML}
+            <div class="card-content">
+                <div class="tag tag-${i.tipo}">${i.tipo}</div>
+                <div class="title">${i.titulo}</div>
+                <button class="fav-btn ${isFav}" onclick="toggleFavorito('${i.titulo.replace(/'/g, "\\'")}', this)">⭐</button>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
 
-        const filtrados = fullData.filter(i => 
-            i.titulo.toLowerCase().includes(query) && 
-            (currentFiltro === "todos" || i.tipo === currentFiltro)
-        );
-
-        if (filtrados.length === 0) {
-            container.innerHTML = "<p style='text-align:center;color:gray;margin-top:50px;'>No hay resultados</p>";
-            return;
-        }
-
-        filtrados.forEach(i => {
-            const card = document.createElement("div");
-            card.className = "card";
-            const imgHTML = i.poster ? `<img src="${i.poster}" class="poster-img" loading="lazy">` : "";
-            
-            card.innerHTML = `
-                ${imgHTML}
-                <div class="card-content">
-                    <div class="tag tag-${i.tipo}">${i.tipo}</div>
-                    <div class="title">${i.titulo}</div>
-                    <button class="fav-btn" onclick="toggleFavorito('${i.titulo.replace(/'/g, "\\'")}', this)">⭐</button>
-                </div>
-            `;
-            container.appendChild(card);
-        });
-    }
-
-    cargarDatos();
+cargarDatos();
 </script>
 </body>
 </html>
