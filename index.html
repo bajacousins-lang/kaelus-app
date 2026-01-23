@@ -2,82 +2,53 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Kaelus Plus BCNTV</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 :root {
-    --bg:#0a0a0a;
-    --card:#161616;
-    --accent-sport:#00ff88;
-    --accent-movie:#ff3e3e;
-    --accent-series:#00e1ff;
-    --text-main:#fff;
-    --text-dim:#888;
+    --bg:#0a0a0a; --card:#161616; --accent-sport:#00ff88; --accent-movie:#ff3e3e; --accent-series:#00e1ff;
+    --text-main:#fff; --text-dim:#888;
 }
-body{
-    font-family:-apple-system,system-ui,sans-serif;
-    background:var(--bg);
-    color:var(--text-main);
-    margin:0;
-    padding:0;
-    user-select:none;
+body {
+    font-family: -apple-system, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text-main);
+    margin: 0; padding: 0; user-select: none;
 }
-.header{
-    position:sticky; top:0; z-index:1000;
-    background:rgba(10,10,10,0.9);
-    backdrop-filter:blur(10px);
-    padding:15px;
-    border-bottom:1px solid #222;
+.header {
+    position: sticky; top: 0; z-index: 1000;
+    background: rgba(10,10,10,0.9); backdrop-filter: blur(10px);
+    padding: 15px; border-bottom: 1px solid #222;
+    text-align:center;
 }
-#buscador{
-    width:100%;
-    background:#1e1e1e;
-    border:1px solid #333;
-    border-radius:12px;
-    padding:12px;
-    color:white;
-    outline:none;
-    box-sizing:border-box;
+#buscador {
+    width: 100%; background: #1e1e1e; border: 1px solid #333;
+    border-radius: 12px; padding: 12px; color: white; outline: none; box-sizing: border-box;
+    margin-bottom: 10px;
 }
-.filter-group{display:flex;gap:8px;overflow-x:auto;padding-top:12px;scrollbar-width:none;}
-.f-btn{background:#222;border:none;color:#888;padding:8px 18px;border-radius:20px;font-size:13px;font-weight:600;white-space:nowrap;}
-.f-btn.active{background:white;color:black;}
-#main-container{padding:15px;}
-.card{background:var(--card);border-radius:18px;margin-bottom:20px;border:1px solid #252525;overflow:hidden;position:relative;}
-.poster-img{width:100%;aspect-ratio:2/3;object-fit:cover;background:#222;}
-.card-content{padding:15px;}
-.tag{font-size:10px;font-weight:800;padding:4px 10px;border-radius:6px;text-transform:uppercase;margin-bottom:8px;display:inline-block;}
-.tag-deporte{background:rgba(0,255,136,0.1);color:var(--accent-sport);}
-.tag-pelicula{background:rgba(255,62,62,0.1);color:var(--accent-movie);}
-.tag-serie{background:rgba(0,225,255,0.1);color:var(--accent-series);}
-.title{font-size:17px;font-weight:700;padding-right:100px;}
-.fav-btn{position:absolute;right:15px;bottom:15px;background:none;border:none;font-size:24px;color:#444;cursor:pointer;}
-.fav-btn.active{color:#ffcc00;}
-.alarm-btn{position:absolute;right:55px;bottom:15px;background:none;border:none;font-size:24px;color:#ff3e3e;cursor:pointer;}
-.alarm-btn.active{color:#ff0000;}
-#modalAlarma{
-    display:none;
-    position:fixed;
-    top:0;left:0;width:100%;height:100%;
-    background:rgba(0,0,0,0.7);
-    justify-content:center;
-    align-items:center;
-}
-#modalAlarma div{
-    background:#161616;
-    padding:20px;
-    border-radius:12px;
-    max-width:300px;
-    width:90%;
-    color:white;
-}
-#modalAlarma button{margin-top:8px;margin-right:5px;padding:6px 12px;border-radius:6px;border:none;cursor:pointer;}
+.filter-group { display:flex; gap:8px; overflow-x:auto; padding-top:12px; scrollbar-width:none; }
+.f-btn { background:#222; border:none; color:#888; padding:8px 18px; border-radius:20px; font-size:13px; font-weight:600; white-space:nowrap; cursor:pointer; }
+.f-btn.active { background:white; color:black; }
+#main-container { padding: 15px; }
+.card { background: var(--card); border-radius:18px; margin-bottom:20px; border:1px solid #252525; overflow:hidden; position:relative; }
+.poster-img { width:100%; aspect-ratio:2/3; object-fit:cover; background:#222; }
+.card-content { padding:15px; }
+.tag { font-size:10px; font-weight:800; padding:4px 10px; border-radius:6px; text-transform:uppercase; margin-bottom:8px; display:inline-block; }
+.tag-deporte { background: rgba(0,255,136,0.1); color: var(--accent-sport); }
+.tag-pelicula { background: rgba(255,62,62,0.1); color: var(--accent-movie); }
+.tag-serie { background: rgba(0,225,255,0.1); color: var(--accent-series); }
+.title { font-size:17px; font-weight:700; padding-right:40px; }
+.fav-btn { position:absolute; right:15px; bottom:15px; background:none; border:none; font-size:24px; color:#444; cursor:pointer; }
+.fav-btn.active { color:#ffcc00; }
+.sus-btn { background:#ff3e3e; color:white; padding:10px 20px; border:none; border-radius:12px; font-weight:600; cursor:pointer; margin-bottom:10px; }
+.sus-btn:disabled { background:#555; cursor:default; }
 </style>
 </head>
 <body>
 
 <div class="header">
+    <img src="logo.png" style="width:120px; display:block; margin:0 auto 10px; border-radius:15px;">
     <input id="buscador" placeholder="🔍 Buscar en Kaelus Plus..." onkeyup="render()">
     <div class="filter-group">
         <button class="f-btn active" onclick="setFiltro('todos',this)">Todos</button>
@@ -88,131 +59,79 @@ body{
 </div>
 
 <div id="main-container">
-    <p style="text-align:center;color:gray;margin-top:50px;">Conectando con Kaelus Plus BCNTV...</p>
-</div>
-
-<!-- Modal Configuración Alarmas -->
-<div id="modalAlarma">
-    <div>
-        <h3>Configurar alertas</h3>
-        <label><input type="checkbox" id="alerta30"> 30 min antes</label><br>
-        <label><input type="checkbox" id="alerta5"> 5 min antes</label><br>
-        <label><input type="checkbox" id="alertaInicio"> Al iniciar</label><br><br>
-        <button onclick="guardarAlarma()">Guardar</button>
-        <button onclick="cerrarModal()">Cancelar</button>
-    </div>
+    <p style="text-align:center; color:gray; margin-top:50px;">Conectando con Kaelus Plus BCNTV...</p>
 </div>
 
 <script>
-const tg=window.Telegram.WebApp; tg.expand(); tg.ready();
-const API_URL="https://kaelus-bot.onrender.com/api/data";
+const tg = window.Telegram.WebApp;
+tg.expand(); tg.ready();
 
-let fullData=[];
-let currentFiltro="todos";
-let alarmaActual={};
+const API_URL = "https://kaelus-bot.onrender.com/api/data"; // Cambia si es necesario
+let fullData = [];
+let currentFiltro = "todos";
+let suscripcionActiva = true; // Esto se puede recibir desde el bot si quieres
 
-// --- Pedir permiso para notificaciones locales ---
-if("Notification" in window && Notification.permission!=="granted"){
-    Notification.requestPermission().then(p=>console.log("Permiso notificaciones:",p));
-}
-
-// --- Funciones ---
-async function cargarDatos(){
-    try{
-        const res=await fetch(API_URL);
-        const data=await res.json();
-        fullData=[
+async function cargarDatos() {
+    try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        fullData = [
             ...(data.deportes||[]).map(i=>({...i,tipo:"deporte"})),
             ...(data.peliculas||[]).map(i=>({...i,tipo:"pelicula"})),
             ...(data.series||[]).map(i=>({...i,tipo:"serie"}))
         ];
         render();
-    }catch(e){
-        document.getElementById("main-container").innerHTML="<p style='text-align:center;color:gray;'>Error de conexión con el Bot</p>";
+    } catch(e){
+        document.getElementById("main-container").innerHTML = "<p style='text-align:center;color:gray;'>Error de conexión con el Bot</p>";
     }
 }
 
-function setFiltro(tipo,btn){
-    currentFiltro=tipo;
+function setFiltro(tipo, btn){
+    currentFiltro = tipo;
     document.querySelectorAll(".f-btn").forEach(b=>b.classList.remove("active"));
     btn.classList.add("active");
     render();
 }
 
-function toggleFavorito(titulo,btn){
+function toggleFavorito(titulo, btn){
+    if(!suscripcionActiva) return;
     btn.classList.toggle('active');
-    tg.sendData(JSON.stringify({action:"fav",title:titulo}));
+    tg.sendData(JSON.stringify({action:"fav", title:titulo}));
     tg.HapticFeedback.impactOccurred('medium');
 }
 
-function abrirConfigAlarma(titulo,url,hora,btn){
-    alarmaActual={titulo,url,hora,btn};
-    document.getElementById("modalAlarma").style.display="flex";
-    let alertasPrev=JSON.parse(sessionStorage.getItem(`alarma_${titulo}`)||'{"30":true,"5":true,"inicio":true}');
-    document.getElementById("alerta30").checked=alertasPrev["30"];
-    document.getElementById("alerta5").checked=alertasPrev["5"];
-    document.getElementById("alertaInicio").checked=alertasPrev["inicio"];
-}
-function cerrarModal(){ document.getElementById("modalAlarma").style.display="none"; }
-function guardarAlarma(){
-    const alertas={
-        "30":document.getElementById("alerta30").checked,
-        "5":document.getElementById("alerta5").checked,
-        "inicio":document.getElementById("alertaInicio").checked
-    };
-    sessionStorage.setItem(`alarma_${alarmaActual.titulo}`,JSON.stringify(alertas));
-    alarmaActual.btn.classList.add('active');
-    tg.sendData(JSON.stringify({
-        action:"alarma_config",
-        title:alarmaActual.titulo,
-        url:alarmaActual.url,
-        hora:alarmaActual.hora,
-        alertas:alertas
-    }));
-    cerrarModal();
-    alert(`🚨 Alarmas guardadas para ${alarmaActual.titulo}`);
-}
-
-function notificarEvento(titulo,mensaje){
-    if("Notification" in window && Notification.permission==="granted"){
-        new Notification(titulo,{body:mensaje,icon:"https://upload.wikimedia.org/wikipedia/commons/3/39/Emoji_u1f6a8.svg"});
-    }
-}
-
-function revisarAlertasLocales(){
-    const ahora=new Date();
-    fullData.forEach(i=>{
-        if(!i.hora) return;
-        let alertas=JSON.parse(sessionStorage.getItem(`alarma_${i.titulo}`)||'{"30":true,"5":true,"inicio":true}');
-        const [hh,mm]=i.hora.split(":");
-        const evento=new Date(); evento.setHours(parseInt(hh)); evento.setMinutes(parseInt(mm)); evento.setSeconds(0);
-        const diff=(evento-ahora)/60000;
-
-        if(alertas["30"] && diff<=30 && diff>29){ notificarEvento(i.titulo,"Empieza en 30 minutos 🚨"); alertas["30"]=false; }
-        if(alertas["5"] && diff<=5 && diff>4){ notificarEvento(i.titulo,"Empieza en 5 minutos 🚨"); alertas["5"]=false; }
-        if(alertas["inicio"] && diff<=0 && diff>-1){ notificarEvento(i.titulo,"¡El evento ha comenzado! 🚨"); alertas["inicio"]=false; }
-
-        sessionStorage.setItem(`alarma_${i.titulo}`,JSON.stringify(alertas));
-    });
-}
-setInterval(revisarAlertasLocales,60000);
-
 function render(){
-    const container=document.getElementById("main-container");
-    const query=document.getElementById("buscador").value.toLowerCase();
-    container.innerHTML="";
-    const filtrados=fullData.filter(i=>i.titulo.toLowerCase().includes(query)&&(currentFiltro==="todos"||i.tipo===currentFiltro));
-    if(filtrados.length===0){container.innerHTML="<p style='text-align:center;color:gray;margin-top:50px;'>No hay resultados</p>";return;}
+    const container = document.getElementById("main-container");
+    container.innerHTML = "";
+
+    if(!suscripcionActiva){
+        const susBtn = document.createElement("button");
+        susBtn.className = "sus-btn";
+        susBtn.innerText = "📥 Solicitar Suscripción";
+        susBtn.onclick = ()=>tg.sendData(JSON.stringify({action:"sus_solicitar"}));
+        container.appendChild(susBtn);
+        return;
+    }
+
+    const query = document.getElementById("buscador").value.toLowerCase();
+    const filtrados = fullData.filter(i=>i.titulo.toLowerCase().includes(query) && (currentFiltro==="todos"||i.tipo===currentFiltro));
+    if(filtrados.length===0){
+        container.innerHTML="<p style='text-align:center;color:gray;margin-top:50px;'>No hay resultados</p>";
+        return;
+    }
+
     filtrados.forEach(i=>{
-        const card=document.createElement("div"); card.className="card";
-        const imgHTML=i.poster?`<img src="${i.poster}" class="poster-img" loading="lazy">`:"";
-        card.innerHTML=`${imgHTML}
+        const card = document.createElement("div");
+        card.className="card";
+        const imgHTML = i.poster?`<img src="${i.poster}" class="poster-img" loading="lazy">`:"";
+        card.innerHTML = `
+            ${imgHTML}
             <div class="card-content">
                 <div class="tag tag-${i.tipo}">${i.tipo}</div>
                 <div class="title">${i.titulo}</div>
-                <button class="fav-btn" onclick="toggleFavorito('${i.titulo.replace(/'/g,"\\'")}',this)">⭐</button>
-                <button class="alarm-btn" onclick="abrirConfigAlarma('${i.titulo.replace(/'/g,"\\'")}','${i.url}','${i.hora}',this)">🚨</button>
-            </div>`;
+                <button class="fav-btn" onclick="toggleFavorito('${i.titulo.replace(/'/g,"\\'")}', this)" ${!suscripcionActiva?'disabled':''}>⭐</button>
+            </div>
+        `;
         container.appendChild(card);
     });
 }
