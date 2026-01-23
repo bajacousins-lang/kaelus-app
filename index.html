@@ -1,79 +1,93 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BCNTV WEB PREMIUM</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        :root { --bg: #0b0b0b; --accent: #00ff88; --card: #161616; --text: #fff; }
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 20px; }
-        .card { background: var(--card); border-radius: 15px; padding: 20px; margin-bottom: 20px; border: 1px solid #222; }
-        .accent-text { color: var(--accent); font-weight: bold; }
-        .btn { 
-            background: var(--accent); color: #000; border: none; padding: 15px; 
-            width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; 
-            font-size: 1rem; margin-top: 10px;
-        }
-        .admin-box { border: 1px solid #ffcc00; display: none; }
-        header { text-align: center; margin-bottom: 30px; }
-        header img { width: 80px; border-radius: 50%; border: 2px solid var(--accent); }
-    </style>
-</head>
-<body>
+import os
+import time
+import threading
+import requests
+from datetime import datetime, timedelta
+from bs4 import BeautifulSoup
+from flask import Flask, jsonify
+from flask_cors import CORS
+import telebot
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from pymongo import MongoClient
 
-    <header>
-        <img src="logo.png" alt="Logo" onerror="this.style.display='none'">
-        <h1>BCNTV PREMIUM</h1>
-        <p id="saludo">Cargando...</p>
-    </header>
+# --- CONFIGURACIÓN ---
+BOT_TOKEN = os.getenv("TELEGRAM_TOKEN")
+ADMIN_ID = str(os.getenv("ADMIN_ID"))
+MONGO_URI = os.getenv("MONGO_URI")
+WEBAPP_URL = "https://bajacousins-lang.github.io/kaelus-app/index.html"
+SOURCE_URL = "https://kaelustvsporte.com"
 
-    <div class="card">
-        <h3>👤 Tu Perfil</h3>
-        <p id="user-info">Iniciando sesión segura...</p>
-    </div>
+# DB Setup
+client = MongoClient(MONGO_URI)
+db = client['bcntv_database']
+subs_col = db['suscripciones']
+users_col = db['usuarios']
 
-    <div class="card admin-box" id="admin-panel">
-        <h3 style="color: #ffcc00;">🔐 Panel Administrador</h3>
-        <p>Usa este botón para activar tu suscripción PREMIUM o la del usuario actual.</p>
-        <button class="btn" style="background: #ffcc00;" onclick="autorizar()">AUTORIZAR ACCESO</button>
-    </div>
+app = Flask('')
+CORS(app)
 
-    <div class="card">
-        <h3>🎬 Contenido Diario</h3>
-        <p>Los eventos se sincronizan automáticamente con <span class="accent-text">kaelustvsporte.com</span></p>
-        <button class="btn" onclick="tg.close()">REGRESAR AL CHAT</button>
-    </div>
+# --- SCRAPER AVANZADO ---
+def get_kaelus_content(category):
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) BCNTV-Premium/1.0"}
+    try:
+        # Petición con tiempo de espera corto para no congelar el bot
+        res = requests.get(SOURCE_URL, headers=headers, timeout=8)
+        soup = BeautifulSoup(res.text, 'html.parser')
+        
+        # Seleccionamos enlaces con texto relevante
+        links = soup.find_all('a', href=True)
+        found = []
+        
+        for l in links:
+            title = l.get_text().strip()
+            url = l['href']
+            # Filtro inteligente: evita enlaces cortos como "Inicio" o "Contacto"
+            if len(title) > 12 and url.startswith('http'):
+                found.append(f"<b>•</b> <a href='{url}'>{title}</a>")
+        
+        if not found: return "📭 No hay eventos nuevos ahora."
+        
+        # Unimos máximo 7 resultados para no saturar
+        header_text = f"🎯 <b>ÚLTIMO EN {category.upper()}</b>\n<i>Fuente: KaelusTV</i>\n\n"
+        return header_text + "\n\n".join(found[:7])
+    except Exception as e:
+        return "⚠️ Error temporal de conexión con la fuente."
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        const user = tg.initDataUnsafe?.user;
-        const ADMIN_ID = "509163892"; // Tu ID de Admin
+# --- BOT ---
+bot = telebot.TeleBot(BOT_TOKEN, parse_mode="HTML")
 
-        tg.ready();
-        tg.expand();
+@bot.callback_query_handler(func=lambda c: c.data.startswith('scr_'))
+def handle_scraping_call(call):
+    cat = call.data.split('_')[1]
+    bot.answer_callback_query(call.id, text="Consultando KaelusTV...")
+    content = get_kaelus_content(cat)
+    bot.send_message(call.message.chat.id, content, disable_web_page_preview=True)
 
-        function iniciar() {
-            if (user) {
-                document.getElementById("saludo").innerText = "¡Hola, " + user.first_name + "!";
-                document.getElementById("user-info").innerHTML = `<b>ID:</b> ${user.id}<br><b>Usuario:</b> @${user.username || 'sin_user'}`;
+# Lógica de Inicio
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    uid = str(message.from_user.id)
+    # Saludo basado en hora (Ajuste -5 para GMT-5)
+    hour = (datetime.now().hour - 5) % 24
+    greet = "¡Buenos días!" if 5 <= hour < 12 else "¡Buenas tardes!" if 12 <= hour < 20 else "¡Buenas noches!"
+    
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        InlineKeyboardButton("⚽ DEPORTES", callback_data="scr_deportes"),
+        InlineKeyboardButton("🎬 PELÍCULAS", callback_data="scr_peliculas")
+    )
+    markup.add(InlineKeyboardButton("🌐 WEB PREMIUM", web_app=WebAppInfo(url=WEBAPP_URL)))
+    
+    bot.send_message(message.chat.id, f"<b>{greet} {message.from_user.first_name}</b>\nBienvenido a la experiencia BCNTV.", reply_markup=markup)
 
-                // Mostrar panel si es Admin
-                if (user.id.toString() === ADMIN_ID) {
-                    document.getElementById("admin-panel").style.display = "block";
-                }
-            }
-        }
+# API para Keep-Alive y WebApp
+@app.route('/')
+def status(): return "OK"
 
-        function autorizar() {
-            tg.showConfirm("¿Confirmas la activación Premium para este ID?", (ok) => {
-                if (ok) {
-                    tg.sendData("aprobar_" + user.id);
-                }
-            });
-        }
+def run_flask():
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
 
-        iniciar();
-    </script>
-</body>
-</html>
+if __name__ == "__main__":
+    threading.Thread(target=run_flask, daemon=True).start()
+    bot.remove_webhook()
+    bot.infinity_polling()
