@@ -2,141 +2,68 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kaelus Plus BCNTV</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
 <style>
-:root {
-    --bg:#0a0a0a; --card:#161616; --accent-sport:#00ff88; --accent-movie:#ff3e3e; --accent-series:#00e1ff;
-    --text-main:#fff; --text-dim:#888;
-}
 body {
-    font-family: -apple-system, system-ui, sans-serif;
-    background: var(--bg);
-    color: var(--text-main);
-    margin: 0; padding: 0; user-select: none;
+    margin: 0;
+    background: #0a0a0a;
+    color: white;
+    font-family: system-ui;
 }
 .header {
-    position: sticky; top: 0; z-index: 1000;
-    background: rgba(10,10,10,0.9); backdrop-filter: blur(10px);
-    padding: 15px; border-bottom: 1px solid #222;
-    text-align:center;
+    padding: 15px;
+    text-align: center;
 }
-#buscador {
-    width: 100%; background: #1e1e1e; border: 1px solid #333;
-    border-radius: 12px; padding: 12px; color: white; outline: none; box-sizing: border-box;
+.header img {
+    width: 120px;
     margin-bottom: 10px;
 }
-.filter-group { display:flex; gap:8px; overflow-x:auto; padding-top:12px; scrollbar-width:none; }
-.f-btn { background:#222; border:none; color:#888; padding:8px 18px; border-radius:20px; font-size:13px; font-weight:600; white-space:nowrap; cursor:pointer; }
-.f-btn.active { background:white; color:black; }
-#main-container { padding: 15px; }
-.card { background: var(--card); border-radius:18px; margin-bottom:20px; border:1px solid #252525; overflow:hidden; position:relative; }
-.poster-img { width:100%; aspect-ratio:2/3; object-fit:cover; background:#222; }
-.card-content { padding:15px; }
-.tag { font-size:10px; font-weight:800; padding:4px 10px; border-radius:6px; text-transform:uppercase; margin-bottom:8px; display:inline-block; }
-.tag-deporte { background: rgba(0,255,136,0.1); color: var(--accent-sport); }
-.tag-pelicula { background: rgba(255,62,62,0.1); color: var(--accent-movie); }
-.tag-serie { background: rgba(0,225,255,0.1); color: var(--accent-series); }
-.title { font-size:17px; font-weight:700; padding-right:40px; }
-.fav-btn { position:absolute; right:15px; bottom:15px; background:none; border:none; font-size:24px; color:#444; cursor:pointer; }
-.fav-btn.active { color:#ffcc00; }
-.sus-btn { background:#ff3e3e; color:white; padding:10px 20px; border:none; border-radius:12px; font-weight:600; cursor:pointer; margin-bottom:10px; }
-.sus-btn:disabled { background:#555; cursor:default; }
+.card {
+    background: #161616;
+    margin: 15px;
+    padding: 15px;
+    border-radius: 15px;
+}
+.poster {
+    width: 100%;
+    border-radius: 12px;
+}
 </style>
 </head>
+
 <body>
-
 <div class="header">
-    <img src="logo.png" style="width:120px; display:block; margin:0 auto 10px; border-radius:15px;">
-    <input id="buscador" placeholder="🔍 Buscar en Kaelus Plus..." onkeyup="render()">
-    <div class="filter-group">
-        <button class="f-btn active" onclick="setFiltro('todos',this)">Todos</button>
-        <button class="f-btn" onclick="setFiltro('deporte',this)">Deportes</button>
-        <button class="f-btn" onclick="setFiltro('pelicula',this)">Películas</button>
-        <button class="f-btn" onclick="setFiltro('serie',this)">Series</button>
-    </div>
+    <img src="logo.png" alt="Kaelus Logo">
+    <h2>Kaelus Plus BCNTV</h2>
+    <p>Contenido exclusivo</p>
 </div>
 
-<div id="main-container">
-    <p style="text-align:center; color:gray; margin-top:50px;">Conectando con Kaelus Plus BCNTV...</p>
-</div>
+<div id="content"></div>
 
 <script>
 const tg = window.Telegram.WebApp;
-tg.expand(); tg.ready();
+tg.expand();
 
-const API_URL = "https://kaelus-bot.onrender.com/api/data"; // Cambia si es necesario
-let fullData = [];
-let currentFiltro = "todos";
-let suscripcionActiva = true; // Esto se puede recibir desde el bot para desactivar contenido
+const API = "https://kaelus-bot.onrender.com/api/data";
 
-async function cargarDatos() {
-    try {
-        const res = await fetch(API_URL);
-        const data = await res.json();
-        fullData = [
-            ...(data.deportes||[]).map(i=>({...i,tipo:"deporte"})),
-            ...(data.peliculas||[]).map(i=>({...i,tipo:"pelicula"})),
-            ...(data.series||[]).map(i=>({...i,tipo:"serie"}))
-        ];
-        render();
-    } catch(e){
-        document.getElementById("main-container").innerHTML = "<p style='text-align:center;color:gray;'>Error de conexión con el Bot</p>";
-    }
-}
+fetch(API)
+.then(r => r.json())
+.then(data => {
+    const c = document.getElementById("content");
 
-function setFiltro(tipo, btn){
-    currentFiltro = tipo;
-    document.querySelectorAll(".f-btn").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    render();
-}
-
-function toggleFavorito(titulo, btn){
-    if(!suscripcionActiva) return;
-    btn.classList.toggle('active');
-    tg.sendData(JSON.stringify({action:"fav", title:titulo}));
-    tg.HapticFeedback.impactOccurred('medium');
-}
-
-function render(){
-    const container = document.getElementById("main-container");
-    container.innerHTML = "";
-
-    if(!suscripcionActiva){
-        const susBtn = document.createElement("button");
-        susBtn.className = "sus-btn";
-        susBtn.innerText = "📥 Solicitar Suscripción";
-        susBtn.onclick = ()=>tg.sendData(JSON.stringify({action:"sus_solicitar"}));
-        container.appendChild(susBtn);
-        return;
-    }
-
-    const query = document.getElementById("buscador").value.toLowerCase();
-    const filtrados = fullData.filter(i=>i.titulo.toLowerCase().includes(query) && (currentFiltro==="todos"||i.tipo===currentFiltro));
-    if(filtrados.length===0){
-        container.innerHTML="<p style='text-align:center;color:gray;margin-top:50px;'>No hay resultados</p>";
-        return;
-    }
-
-    filtrados.forEach(i=>{
-        const card = document.createElement("div");
-        card.className="card";
-        const imgHTML = i.poster?`<img src="${i.poster}" class="poster-img" loading="lazy">`:"";
-        card.innerHTML = `
-            ${imgHTML}
-            <div class="card-content">
-                <div class="tag tag-${i.tipo}">${i.tipo}</div>
-                <div class="title">${i.titulo}</div>
-                <button class="fav-btn" onclick="toggleFavorito('${i.titulo.replace(/'/g,"\\'")}', this)" ${!suscripcionActiva?'disabled':''}>⭐</button>
-            </div>
+    [...data.deportes, ...data.peliculas, ...data.series].forEach(i => {
+        const d = document.createElement("div");
+        d.className = "card";
+        d.innerHTML = `
+            ${i.poster ? `<img class="poster" src="${i.poster}">` : ""}
+            <h3>${i.titulo}</h3>
         `;
-        container.appendChild(card);
+        c.appendChild(d);
     });
-}
-
-cargarDatos();
+});
 </script>
 </body>
 </html>
