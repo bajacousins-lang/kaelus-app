@@ -1,0 +1,142 @@
+import telebot, os, requests, time, json, random, threading
+from bs4 import BeautifulSoup
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from datetime import datetime
+from flask import Flask
+from threading import Thread
+
+# ==========================================
+# 1. SERVIDOR DE SUPERVIVENCIA (FLASK)
+# ==========================================
+app = Flask('')
+SESSION_ID = random.randint(1000, 9999)
+LAST_SCRAPE_SUCCESS = "Nunca"
+
+@app.route('/')
+def home():
+    return f"Bot Kaelus Plus activo. Sesion: {SESSION_ID}. Ultimo Scrape: {LAST_SCRAPE_SUCCESS}"
+
+def run_flask():
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port)
+
+def keep_alive():
+    t = Thread(target=run_flask)
+    t.daemon = True
+    t.start()
+
+# ==========================================
+# 2. CONFIGURACIÓN Y VARIABLES
+# ==========================================
+TOKEN = os.getenv("TELEGRAM_TOKEN")
+ADMIN_ID = os.getenv("ADMIN_ID")
+URL_BASE = "https://www.kaelustvsoporte.com/"
+URL_WEBAPP = "https://bajacousins-lang.github.io/kaelus-app/"
+SUPPORT_USER = "Excal3000"
+AUTH_FILE = "autorizados.json"
+
+bot = telebot.TeleBot(TOKEN, threaded=False)
+USUARIOS_AUTORIZADOS_DATA = {"509163892": "2099-12-31"} # Admin default
+
+# Mapeo de archivos para los botones
+ARCHIVOS = {
+    "btn_dep": "eventos.json",
+    "btn_ser": "series.json",
+    "btn_pel": "peliculas.json"
+}
+
+# ==========================================
+# 3. MOTOR DE SCRAPING (RECOLECCIÓN)
+# ==========================================
+def actualizar_datos():
+    global LAST_SCRAPE_SUCCESS
+    print("🛰️ Iniciando recolección de datos desde Kaelus Soporte...")
+    try:
+        response = requests.get(URL_BASE, timeout=15)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        enlaces = soup.find_all('a', href=True)
+        
+        datos = {"deportes": [], "series": [], "peliculas": []}
+
+        for link in enlaces:
+            texto = link.text.upper()
+            href = link['href']
+            item = {"titulo": link.text.strip(), "url": href}
+            
+            if any(x in texto for x in ["PARTIDO", "LIVE", "CANAL", "⚽", "DIRECTO"]):
+                datos["deportes"].append(item)
+            elif any(x in texto for x in ["SERIE", "TEMP", "EPISODIO"]):
+                datos["series"].append(item)
+            else:
+                datos["peliculas"].append(item)
+
+        # Guardar archivos JSON locales
+        with open("eventos.json", "w", encoding="utf-8") as f: json.dump(datos["deportes"], f, indent=4)
+        with open("series.json", "w", encoding="utf-8") as f: json.dump(datos["series"], f, indent=4)
+        with open("peliculas.json", "w", encoding="utf-8") as f: json.dump(datos["peliculas"], f, indent=4)
+
+        LAST_SCRAPE_SUCCESS = datetime.now().strftime("%H:%M:%S")
+        print(f"✅ Scrape exitoso a las {LAST_SCRAPE_SUCCESS}")
+        return True
+    except Exception as e:
+        print(f"❌ Error en Scraper: {e}")
+        return False
+
+# ==========================================
+# 4. MANEJADOR DE BOTONES (CALLBACKS)
+# ==========================================
+@bot.callback_query_handler(func=lambda call: True)
+def manejar_botones(call):
+    # ESTO QUITA EL RELOJITO DE TELEGRAM AL INSTANTE
+    bot.answer_callback_query(call.id)
+    uid = str(call.from_user.id)
+
+    if call.data in ARCHIVOS:
+        archivo = ARCHIVOS[call.data]
+        if not os.path.exists(archivo):
+            bot.send_message(call.message.chat.id, "⏳ Datos preparándose... intenta en 10 segundos.")
+            actualizar_datos()
+            return
+
+        with open(archivo, "r", encoding="utf-8") as f:
+            items = json.load(f)
+        
+        if not items:
+            bot.send_message(call.message.chat.id, "📭 Sección vacía por ahora.")
+        else:
+            resumen = "\n".join([f"🔹 <a href='{i['url']}'>{i['titulo']}</a>" for i in items[:15]])
+            bot.send_message(call.message.chat.id, f"<b>Resultados:</b>\n\n{resumen}", parse_mode="HTML", disable_web_page_preview=True)
+
+    elif call.data == "adm_upd":
+        if uid == str(ADMIN_ID):
+            bot.send_message(call.message.chat.id, "🔄 Actualizando...")
+            if actualizar_datos():
+                bot.send_message(call.message.chat.id, "✅ ¡Listo!")
+            else:
+                bot.send_message(call.message.chat.id, "❌ Falló conexión.")
+
+# ==========================================
+# 5. MENÚ PRINCIPAL
+# ==========================================
+@bot.message_handler(commands=['start', 'menu'])
+def welcome(message):
+    uid = str(message.from_user.id)
+    m = InlineKeyboardMarkup(row_width=2)
+    m.add(InlineKeyboardButton("⚽ DEPORTES", callback_data="btn_dep"), 
+          InlineKeyboardButton("📺 SERIES", callback_data="btn_ser"))
+    m.add(InlineKeyboardButton("🎬 PELÍCULAS", callback_data="btn_pel"))
+    m.add(InlineKeyboardButton("🏟️ ABRIR WEB APP", web_app=WebAppInfo(url=URL_WEBAPP)))
+    
+    if uid == str(ADMIN_ID):
+        m.add(InlineKeyboardButton("🔄 UPDATE MANUAL", callback_data="adm_upd"))
+
+    bot.send_message(message.chat.id, "<b>Kaelus Plus</b>\nElige una opción:", reply_markup=m, parse_mode="HTML")
+
+# ==========================================
+# 6. EJECUCIÓN
+# ==========================================
+if __name__ == "__main__":
+    keep_alive() 
+    actualizar_datos() # Crea los archivos .json al arrancar
+    print(f"🤖 Bot iniciado. Sesión: {SESSION_ID}")
+    bot.infinity_polling()
