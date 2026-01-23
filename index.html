@@ -1,215 +1,79 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>BCNTV Ultimate Experience</title>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BCNTV WEB PREMIUM</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
     <style>
-        :root {
-            --bg: #0b0b0b;
-            --card: #161616;
-            --accent: #00ff88;
-            --text: #eaeaea;
-            --muted: #999;
-            --admin-gold: #ffcc00;
+        :root { --bg: #0b0b0b; --accent: #00ff88; --card: #161616; --text: #fff; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 20px; }
+        .card { background: var(--card); border-radius: 15px; padding: 20px; margin-bottom: 20px; border: 1px solid #222; }
+        .accent-text { color: var(--accent); font-weight: bold; }
+        .btn { 
+            background: var(--accent); color: #000; border: none; padding: 15px; 
+            width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; 
+            font-size: 1rem; margin-top: 10px;
         }
-
-        * {
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-
-        body {
-            margin: 0;
-            background: var(--bg);
-            color: var(--text);
-            padding-bottom: 30px;
-        }
-
-        header {
-            padding: 30px 20px;
-            text-align: center;
-        }
-
-        header img {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            border: 2px solid var(--accent);
-            margin-bottom: 15px;
-            object-fit: cover;
-        }
-
-        header h1 { font-size: 1.5rem; margin: 0; }
-        header p { font-size: 0.9rem; color: var(--muted); margin-top: 5px; }
-
-        .container { padding: 16px; }
-
-        .card {
-            background: var(--card);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 16px;
-            border: 1px solid #222;
-        }
-
-        .card h2 {
-            font-size: 1.1rem;
-            margin: 0 0 10px 0;
-            color: var(--accent);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .card p { font-size: 0.9rem; color: var(--muted); line-height: 1.4; }
-
-        .button {
-            display: block;
-            width: 100%;
-            padding: 14px;
-            margin-top: 15px;
-            background: var(--accent);
-            color: #000;
-            border: none;
-            border-radius: 12px;
-            font-weight: bold;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-
-        .button:active { opacity: 0.8; }
-
-        .button.secondary {
-            background: transparent;
-            border: 1px solid var(--accent);
-            color: var(--accent);
-        }
-
-        .admin-section {
-            border: 1px dashed var(--admin-gold) !important;
-            display: none; /* Se activa por JS */
-        }
-
-        .admin-section h2 { color: var(--admin-gold); }
-
-        .footer {
-            text-align: center;
-            padding: 20px;
-            font-size: 0.75rem;
-            color: var(--muted);
-        }
-
-        #statusText {
-            font-family: monospace;
-            background: #000;
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 10px;
-            font-size: 0.85rem;
-        }
+        .admin-box { border: 1px solid #ffcc00; display: none; }
+        header { text-align: center; margin-bottom: 30px; }
+        header img { width: 80px; border-radius: 50%; border: 2px solid var(--accent); }
     </style>
 </head>
-
 <body>
 
-<header>
-    <img src="logo.png" alt="BCNTV Logo" onerror="this.src='https://via.placeholder.com/100/00ff88/000000?text=BCNTV'" />
-    <h1 id="welcomeTitle">BCNTV Ultimate</h1>
-    <p>Películas · Series · Deportes · Premium</p>
-</header>
-
-<div class="container" id="mainContainer">
+    <header>
+        <img src="logo.png" alt="Logo" onerror="this.style.display='none'">
+        <h1>BCNTV PREMIUM</h1>
+        <p id="saludo">Cargando...</p>
+    </header>
 
     <div class="card">
-        <h2>👤 Mi Perfil</h2>
-        <div id="statusText">Obteniendo datos de Telegram...</div>
+        <h3>👤 Tu Perfil</h3>
+        <p id="user-info">Iniciando sesión segura...</p>
     </div>
 
-    <div class="card">
-        <h2>🎬 Centro de Contenido</h2>
-        <p>Explora nuestro catálogo completo. Si no tienes suscripción activa, solicita una al administrador.</p>
-        <button class="button" onclick="closeToBot()">Regresar al Chat</button>
+    <div class="card admin-box" id="admin-panel">
+        <h3 style="color: #ffcc00;">🔐 Panel Administrador</h3>
+        <p>Usa este botón para activar tu suscripción PREMIUM o la del usuario actual.</p>
+        <button class="btn" style="background: #ffcc00;" onclick="autorizar()">AUTORIZAR ACCESO</button>
     </div>
 
     <div class="card">
-        <h2>📘 Ayuda y Soporte</h2>
-        <p>¿Tienes dudas sobre el uso del bot o tu cuenta?</p>
-        <button class="button secondary" onclick="requestManual()">Ver Manual de Usuario</button>
+        <h3>🎬 Contenido Diario</h3>
+        <p>Los eventos se sincronizan automáticamente con <span class="accent-text">kaelustvsporte.com</span></p>
+        <button class="btn" onclick="tg.close()">REGRESAR AL CHAT</button>
     </div>
 
-    <div class="card admin-section" id="adminCard">
-        <h2>🔐 Administración</h2>
-        <p>Has sido reconocido como Administrador del sistema.</p>
-        <button class="button" style="background: var(--admin-gold);" onclick="adminSelfApprove()">Auto-Autorizar mi Acceso</button>
-    </div>
+    <script>
+        const tg = window.Telegram.WebApp;
+        const user = tg.initDataUnsafe?.user;
+        const ADMIN_ID = "509163892"; // Tu ID de Admin
 
-</div>
+        tg.ready();
+        tg.expand();
 
-<div class="footer">
-    © 2026 BCNTV · Uso exclusivo para miembros autorizados
-</div>
+        function iniciar() {
+            if (user) {
+                document.getElementById("saludo").innerText = "¡Hola, " + user.first_name + "!";
+                document.getElementById("user-info").innerHTML = `<b>ID:</b> ${user.id}<br><b>Usuario:</b> @${user.username || 'sin_user'}`;
 
-<script>
-    const tg = window.Telegram.WebApp;
-    const user = tg.initDataUnsafe?.user;
-    
-    // CONFIGURACIÓN: Cambia esto por tu ID real
-    const MY_ADMIN_ID = "8234178081"; // Ajustado según tu token visto
-
-    tg.ready();
-    tg.expand();
-
-    function setupApp() {
-        const statusDiv = document.getElementById("statusText");
-        const titleH1 = document.getElementById("welcomeTitle");
-        const hora = new Date().getHours();
-        let saludo = "¡Bienvenido!";
-
-        if (hora >= 5 && hora < 12) saludo = "¡Buenos días!";
-        else if (hora >= 12 && hora < 20) saludo = "¡Buenas tardes!";
-        else saludo = "¡Buenas noches!";
-
-        if (user) {
-            titleH1.innerText = `${saludo}, ${user.first_name}`;
-            statusDiv.innerHTML = `
-                <b>ID:</b> ${user.id}<br>
-                <b>User:</b> @${user.username || 'n/a'}<br>
-                <b>Status:</b> Verificando...
-            `;
-
-            // Lógica para mostrar Panel de Admin
-            if (user.id.toString() === MY_ADMIN_ID) {
-                document.getElementById("adminCard").style.display = "block";
+                // Mostrar panel si es Admin
+                if (user.id.toString() === ADMIN_ID) {
+                    document.getElementById("admin-panel").style.display = "block";
+                }
             }
-        } else {
-            statusDiv.innerText = "Error: Abre la App desde el Bot oficial.";
         }
-    }
 
-    function closeToBot() {
-        tg.close();
-    }
+        function autorizar() {
+            tg.showConfirm("¿Confirmas la activación Premium para este ID?", (ok) => {
+                if (ok) {
+                    tg.sendData("aprobar_" + user.id);
+                }
+            });
+        }
 
-    function requestManual() {
-        // Envía datos al bot. El bot debe tener el manejador content_types=['web_app_data']
-        tg.sendData("action_manual");
-    }
-
-    function adminSelfApprove() {
-        tg.showConfirm("¿Quieres activar tu propia suscripción de 30 días?", (ok) => {
-            if (ok) {
-                tg.sendData(`aprobar_${user.id}`);
-            }
-        });
-    }
-
-    setupApp();
-</script>
-
+        iniciar();
+    </script>
 </body>
 </html>
