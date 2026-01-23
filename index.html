@@ -5,65 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kaelus Plus BCNTV</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-<style>
-body {
-    margin: 0;
-    background: #0a0a0a;
-    color: white;
-    font-family: system-ui;
-}
-.header {
-    padding: 15px;
-    text-align: center;
-}
-.header img {
-    width: 120px;
-    margin-bottom: 10px;
-}
-.card {
-    background: #161616;
-    margin: 15px;
-    padding: 15px;
-    border-radius: 15px;
-}
-.poster {
-    width: 100%;
-    border-radius: 12px;
-}
-</style>
 </head>
 
 <body>
-<div class="header">
-    <img src="logo.png" alt="Kaelus Logo">
-    <h2>Kaelus Plus BCNTV</h2>
-    <p>Contenido exclusivo</p>
-</div>
+<img src="logo.png" style="width:150px;display:block;margin:auto;">
+<h2>Kaelus Plus BCNTV</h2>
+<p>Todo tu contenido en un solo lugar.</p>
 
-<div id="content"></div>
+<button onclick="activarAlarma()">🔔 Activar alarma</button>
 
 <script>
 const tg = window.Telegram.WebApp;
-tg.expand();
+tg.ready();
 
-const API = "https://kaelus-bot.onrender.com/api/data";
-
-fetch(API)
-.then(r => r.json())
-.then(data => {
-    const c = document.getElementById("content");
-
-    [...data.deportes, ...data.peliculas, ...data.series].forEach(i => {
-        const d = document.createElement("div");
-        d.className = "card";
-        d.innerHTML = `
-            ${i.poster ? `<img class="poster" src="${i.poster}">` : ""}
-            <h3>${i.titulo}</h3>
-        `;
-        c.appendChild(d);
-    });
-});
+function activarAlarma(){
+    tg.sendData(JSON.stringify({
+        action:"alarma",
+        minutos:[30,5,0]
+    }));
+    tg.showAlert("🔔 Alarma configurada");
+}
 </script>
 </body>
 </html>
