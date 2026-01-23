@@ -1,30 +1,171 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kaelus Plus BCNTV</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+<title>BCNTV Ultimate Experience</title>
+
+<!-- Telegram -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+:root {
+    --bg: #0b0b0b;
+    --card: #161616;
+    --accent: #00ff88;
+    --text: #eaeaea;
+    --muted: #999;
+}
+
+* {
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+}
+
+header {
+    padding: 20px;
+    text-align: center;
+}
+
+header img {
+    width: 110px;
+    margin-bottom: 10px;
+}
+
+header h1 {
+    font-size: 1.4rem;
+    margin: 0;
+}
+
+header p {
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+
+.container {
+    padding: 16px;
+}
+
+.card {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.card h2 {
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+}
+
+.card p {
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+
+.button {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    margin-top: 10px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.button.secondary {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+}
+
+.footer {
+    text-align: center;
+    padding: 12px;
+    font-size: 0.75rem;
+    color: var(--muted);
+}
+</style>
 </head>
 
 <body>
-<img src="logo.png" style="width:150px;display:block;margin:auto;">
-<h2>Kaelus Plus BCNTV</h2>
-<p>Todo tu contenido en un solo lugar.</p>
 
-<button onclick="activarAlarma()">🔔 Activar alarma</button>
+<header>
+    <img src="logo.png" alt="BCNTV Logo" />
+    <h1>BCNTV Ultimate Experience</h1>
+    <p>Películas · Series · Deportes · Contenido Premium</p>
+</header>
+
+<div class="container">
+
+    <div class="card">
+        <h2>👤 Estado de tu cuenta</h2>
+        <p id="statusText">Cargando información…</p>
+    </div>
+
+    <div class="card">
+        <h2>🎬 Contenido</h2>
+        <p>Accede a películas y series directamente desde el bot.</p>
+        <button class="button" onclick="openBot()">Abrir Bot</button>
+    </div>
+
+    <div class="card">
+        <h2>📘 Ayuda</h2>
+        <p>Consulta el manual o contacta con soporte.</p>
+        <button class="button secondary" onclick="openManual()">Manual de Usuario</button>
+    </div>
+
+</div>
+
+<div class="footer">
+    © 2026 BCNTV · Uso exclusivo para miembros autorizados
+</div>
 
 <script>
 const tg = window.Telegram.WebApp;
 tg.ready();
+tg.expand();
 
-function activarAlarma(){
-    tg.sendData(JSON.stringify({
-        action:"alarma",
-        minutos:[30,5,0]
-    }));
-    tg.showAlert("🔔 Alarma configurada");
+// Datos del usuario desde Telegram
+const user = tg.initDataUnsafe?.user;
+
+function openBot() {
+    tg.close();
 }
+
+function openManual() {
+    tg.sendData(JSON.stringify({
+        action: "manual_user"
+    }));
+}
+
+// Simulación segura (NO rompe si backend no responde)
+function loadStatus() {
+    if (!user) {
+        document.getElementById("statusText").innerText =
+            "No se pudo obtener información del usuario.";
+        return;
+    }
+
+    document.getElementById("statusText").innerText =
+        `Usuario: @${user.username || "sin_username"}\nEstado: Validando suscripción…`;
+
+    // El backend real responderá por WebAppData
+}
+
+loadStatus();
 </script>
+
 </body>
 </html>
