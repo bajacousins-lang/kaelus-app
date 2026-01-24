@@ -6,65 +6,69 @@
     <title>BCNTV Premium</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --accent: #00ff88; --bg: #000; --card: #161616; }
+        :root { --accent: #00ff88; --bg: #000; --card: #121212; }
         body { background: var(--bg); color: #fff; font-family: -apple-system, sans-serif; padding: 15px; margin: 0; }
         
-        .search-box { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #333; background: #111; color: #fff; margin-bottom: 15px; box-sizing: border-box; font-size: 1rem; }
-        
-        .filter-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; position: sticky; top: 0; background: var(--bg); z-index: 100; }
-        .filter-bar::-webkit-scrollbar { display: none; }
-        .pill { background: #222; border: 1px solid #444; color: #888; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
-        .pill.active { background: var(--accent); color: #000; border-color: var(--accent); }
+        .search-box { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #333; background: #1a1a1a; color: #fff; margin-bottom: 15px; box-sizing: border-box; outline: none; }
+        .search-box:focus { border-color: var(--accent); }
 
-        .card { background: var(--card); border-radius: 15px; padding: 12px; border: 1px solid #222; margin-bottom: 12px; display: flex; align-items: center; gap: 15px; }
-        
-        /* Contenedor del Logo con efecto Glow */
-        .logo-container { width: 55px; height: 55px; flex-shrink: 0; background: #222; border-radius: 12px; }
-        .logo-img { 
-            width: 100%; height: 100%; border-radius: 12px; object-fit: cover; 
-            border: 2px solid var(--accent); box-shadow: 0 0 10px rgba(0, 255, 136, 0.4); 
+        .filter-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; position: sticky; top: 0; background: var(--bg); z-index: 10; }
+        .pill { background: #222; border: 1px solid #333; color: #888; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 12px; font-weight: bold; }
+        .pill.active { background: var(--accent); color: #000; border-color: var(--accent); box-shadow: 0 0 10px rgba(0,255,136,0.3); }
+
+        .card { 
+            background: var(--card); border-radius: 12px; padding: 12px; border: 1px solid #222; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; 
+            /* MEJORA RECUPERADA: Virtualización para scroll suave */
+            content-visibility: auto; contain-intrinsic-size: 70px;
         }
+        
+        .logo-container { width: 50px; height: 50px; flex-shrink: 0; border-radius: 10px; border: 1px solid var(--accent); overflow: hidden; box-shadow: 0 0 15px rgba(0,255,136,0.15); }
+        .logo-img { width: 100%; height: 100%; object-fit: cover; }
 
-        .info { flex-grow: 1; overflow: hidden; }
-        .cat-tag { font-size: 0.65rem; color: var(--accent); font-weight: bold; text-transform: uppercase; }
-        .title { font-weight: bold; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .info { flex-grow: 1; min-width: 0; }
+        .cat-tag { font-size: 9px; color: var(--accent); font-weight: bold; text-transform: uppercase; margin-bottom: 3px; }
+        .title { font-weight: bold; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #eee; }
         
-        .btn-play { background: var(--accent); color: #000; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 800; cursor: pointer; }
+        .btn-play { background: var(--accent); color: #000; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
         
-        #loader { text-align: center; margin-top: 35vh; color: var(--accent); }
+        #loader { text-align: center; margin-top: 35vh; color: var(--accent); font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <input type="text" id="search" class="search-box" placeholder="🔍 Buscar canal...">
+    <input type="text" id="search" class="search-box" placeholder="🔍 Buscar canal, película o serie...">
 
     <div class="filter-bar">
-        <div class="pill active" onclick="filterData('TODOS', this)">🚀 TODOS</div>
+        <div class="pill active" onclick="filterData('TODOS', this)">🚀 TODO</div>
         <div class="pill" onclick="filterData('⚽ DEPORTES', this)">⚽ DEPORTES</div>
         <div class="pill" onclick="filterData('🎬 CINE', this)">🎬 CINE</div>
-        <div class="pill" onclick="filterData('📺 TV LIVE', this)">📺 TV</div>
+        <div class="pill" onclick="filterData('📺 SERIES', this)">📺 SERIES</div>
     </div>
 
-    <div id="loader"><p>Cargando BCNTV...</p></div>
+    <div id="loader">🛰️ Sincronizando satélite...</div>
     <div id="container"></div>
 
     <script>
         const tg = window.Telegram.WebApp;
         const API_URL = "https://kaelus-bot.onrender.com"; 
-        const MI_LOGO = "logo.png"; // Se carga desde tu GitHub
+        const MI_LOGO = "logo.png"; 
 
-        async function initApp() {
+        async function init() {
             try {
-                const res = await fetch(`${API_URL}/api/links`);
+                // MEJORA RECUPERADA: Timeout de 8s para evitar cuelgues de red
+                const controller = new AbortController();
+                const tid = setTimeout(() => controller.abort(), 8000);
+                
+                const res = await fetch(`${API_URL}/api/links`, { signal: controller.signal });
                 const items = await res.json();
+                clearTimeout(tid);
+
                 if (items.length > 0) {
                     render(items);
                     document.getElementById('loader').style.display = 'none';
-                } else {
-                    throw new Error();
                 }
             } catch (e) {
-                setTimeout(initApp, 4000);
+                setTimeout(init, 3000); // Reintento automático
             }
         }
 
@@ -72,26 +76,30 @@
             const container = document.getElementById('container');
             container.innerHTML = items.map(i => `
                 <div class="card item-card" data-cat="${i.cat}" data-name="${i.t}">
-                    <div class="logo-container">
-                        <img src="${MI_LOGO}" class="logo-img" loading="lazy">
-                    </div>
+                    <div class="logo-container"><img src="${MI_LOGO}" class="logo-img"></div>
                     <div class="info">
                         <div class="cat-tag">${i.cat}</div>
                         <div class="title">${i.t}</div>
                     </div>
-                    <button class="btn-play" onclick="tg.openLink('${i.u}')">VER</button>
+                    <button class="btn-play" onclick="ver('${i.u}')">VER</button>
                 </div>
             `).join('');
         }
 
+        function ver(url) {
+            // MEJORA RECUPERADA: Haptic Feedback (Vibración) al pulsar
+            tg.HapticFeedback.impactOccurred('medium');
+            tg.openLink(url);
+        }
+
         function filterData(cat, el) {
+            // MEJORA RECUPERADA: Vibración al cambiar filtro
+            tg.HapticFeedback.selectionChanged();
             document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
             el.classList.add('active');
-            document.querySelectorAll('.item-card').forEach(card => {
-                const itemCat = card.getAttribute('data-cat');
-                card.style.display = (cat === 'TODOS' || itemCat === cat) ? 'flex' : 'none';
+            document.querySelectorAll('.item-card').forEach(c => {
+                c.style.display = (cat === 'TODOS' || c.getAttribute('data-cat') === cat) ? 'flex' : 'none';
             });
-            tg.HapticFeedback.impactOccurred('light');
         }
 
         document.getElementById('search').addEventListener('input', (e) => {
@@ -103,7 +111,8 @@
 
         tg.ready();
         tg.expand();
-        initApp();
+        tg.setHeaderColor('#000000'); // Estética Premium
+        init();
     </script>
 </body>
 </html>
