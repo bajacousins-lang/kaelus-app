@@ -1,66 +1,57 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        :root { --accent: #00ff88; --bg: #0b0b0b; }
-        body { background: var(--bg); color: white; font-family: sans-serif; text-align: center; padding: 20px; }
-        .card { background: #1a1a1a; border-radius: 12px; padding: 20px; border: 1px solid #333; margin-bottom: 20px; }
-        .btn { background: var(--accent); color: black; border: none; padding: 16px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; }
-        .btn:disabled { background: #444; color: #888; }
-        #admin-panel { display: none; border: 1px solid gold; }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <h2 id="welcome">Cargando BCNTV...</h2>
-    </div>
+import os, time, threading, requests, hmac, hashlib, urllib.parse
+from datetime import datetime, timedelta
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from bs4 import BeautifulSoup
+from pymongo import MongoClient
 
-    <div class="card" id="admin-panel">
-        <h3 style="color: gold;">Panel Maestro</h3>
-        <button class="btn" id="authBtn" onclick="ejecutarAccion()">ACTIVAR MI PREMIUM</button>
-    </div>
+# --- CONFIGURACIÓN ---
+BOT_TOKEN = os.getenv("TELEGRAM_TOKEN")
+ADMIN_ID = str(os.getenv("ADMIN_ID"))
+MONGO_URI = os.getenv("MONGO_URI")
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        const API_URL = "https://tu-app-en-render.onrender.com"; // <--- CAMBIAR
+# Conexión Singleton (Eficiencia de recursos)
+client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+db = client['bcntv_database']
+cols = {"cache": db['cache_contenido'], "subs": db['suscripciones']}
+
+app = Flask(__name__)
+CORS(app) # Crucial para la compatibilidad con el frontend
+
+# --- SEGURIDAD: VALIDACIÓN DE FIRMA ---
+def validar_telegram_data(init_data):
+    try:
+        # Decodificar datos crudos enviados por la WebApp
+        parsed_data = dict(urllib.parse.parse_qsl(init_data))
+        hash_recibido = parsed_data.pop('hash', None)
+        # Reconstruir la cadena de verificación ordenada alfabéticamente
+        data_check_string = "\n".join([f"{k}={v}" for k, v in sorted(parsed_data.items())])
         
-        tg.ready();
-        tg.expand();
+        # Crear llave secreta con el Token del Bot
+        secret_key = hmac.new(b"WebAppData", BOT_TOKEN.encode(), hashlib.sha256).digest()
+        hash_calculado = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
+        
+        return hash_calculado == hash_recibido
+    except:
+        return False
 
-        const user = tg.initDataUnsafe?.user;
-        if (user) {
-            document.getElementById("welcome").innerText = `Hola, ${user.first_name}`;
-            if (user.id.toString() === "509163892") {
-                document.getElementById("admin-panel").style.display = "block";
-            }
-        }
+@app.route('/api/autorizar', methods=['POST'])
+def api_auth():
+    data = request.json
+    raw_init = data.get('initData', '')
+    uid = str(data.get('uid')) # Forzamos String para compatibilidad total
 
-        async function ejecutarAccion() {
-            const btn = document.getElementById("authBtn");
-            btn.disabled = true;
-            btn.innerText = "⏳ Conectando...";
+    # 1. Validación de Integridad Criptográfica
+    if not validar_telegram_data(raw_init):
+        return jsonify({"status": "forbidden", "msg": "Firma inválida"}), 403
 
-            try {
-                const res = await fetch(`${API_URL}/api/autorizar`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ uid: user.id.toString() })
-                });
+    # 2. Validación de Identidad
+    if uid == ADMIN_ID:
+        exp = (datetime.now() + timedelta(days=30)).isoformat()
+        cols['subs'].update_one({"_id": uid}, {"$set": {"expires": exp}}, upsert=True)
+        return jsonify({"status": "ok", "msg": "Premium activado"}), 200
+    
+    return jsonify({"status": "unauthorized"}), 401
 
-                if (res.ok) {
-                    tg.HapticFeedback.notificationOccurred('success');
-                    tg.showPopup({ title: "✅ Éxito", message: "Premium activado correctamente.", buttons: [{type: "ok"}] });
-                }
-            } catch (e) {
-                tg.showAlert("⚠️ Servidor despertando. Intenta de nuevo en 10 segundos.");
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "ACTIVAR MI PREMIUM";
-            }
-        }
-    </script>
-</body>
-</html>
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
