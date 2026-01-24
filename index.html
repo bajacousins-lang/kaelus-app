@@ -7,124 +7,84 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root { --accent: #00ff88; --bg: #000; --card: #121212; }
-        body { background: var(--bg); color: #fff; font-family: -apple-system, sans-serif; padding: 15px; margin: 0; overflow-x: hidden; }
-        
-        /* Buscador */
-        .search-box { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #333; background: #1a1a1a; color: #fff; margin-bottom: 15px; box-sizing: border-box; outline: none; transition: 0.3s; }
-        .search-box:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(0,255,136,0.2); }
-
-        /* Barra de Filtros */
+        body { background: var(--bg); color: #fff; font-family: -apple-system, sans-serif; padding: 15px; margin: 0; }
+        .search-box { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #333; background: #1a1a1a; color: #fff; margin-bottom: 15px; box-sizing: border-box; outline: none; }
         .filter-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; position: sticky; top: 0; background: var(--bg); z-index: 10; }
-        .filter-bar::-webkit-scrollbar { display: none; }
         .pill { background: #222; border: 1px solid #333; color: #888; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .pill.active { background: var(--accent); color: #000; border-color: var(--accent); box-shadow: 0 0 10px rgba(0,255,136,0.3); }
-
-        /* Tarjetas de Canales */
-        .card { 
-            background: var(--card); border-radius: 12px; padding: 12px; border: 1px solid #222; margin-bottom: 10px; 
-            display: flex; align-items: center; gap: 12px; 
-            content-visibility: auto; contain-intrinsic-size: 75px;
-        }
-        
-        .logo-container { width: 55px; height: 75px; flex-shrink: 0; border-radius: 8px; border: 1px solid #333; overflow: hidden; background: #1a1a1a; }
+        .pill.active { background: var(--accent); color: #000; border-color: var(--accent); }
+        .card { background: var(--card); border-radius: 12px; padding: 12px; border: 1px solid #222; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
+        .logo-container { width: 55px; height: 75px; flex-shrink: 0; border-radius: 8px; border: 1px solid #333; overflow: hidden; background: #111; }
         .logo-img { width: 100%; height: 100%; object-fit: cover; }
-
         .info { flex-grow: 1; min-width: 0; }
-        .cat-tag { font-size: 9px; color: var(--accent); font-weight: bold; text-transform: uppercase; margin-bottom: 3px; }
+        .cat-tag { font-size: 9px; color: var(--accent); font-weight: bold; text-transform: uppercase; }
         .title { font-weight: bold; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #eee; }
-        
         .actions { display: flex; align-items: center; gap: 10px; }
-        .btn-play { background: var(--accent); color: #000; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px; }
-        .btn-fav { background: none; border: none; font-size: 22px; cursor: pointer; color: #444; transition: 0.2s; padding: 0; }
-        .btn-fav.active { color: #ffeb3b; filter: drop-shadow(0 0 5px rgba(255,235,59,0.4)); }
-
-        #loader { text-align: center; margin-top: 35vh; color: var(--accent); font-weight: bold; font-size: 14px; }
-        .msg-empty { text-align: center; color: #666; margin-top: 50px; font-size: 14px; line-height: 1.6; }
+        .btn-play { background: var(--accent); color: #000; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn-fav { background: none; border: none; font-size: 20px; cursor: pointer; color: #444; }
+        .btn-fav.active { color: #ffeb3b; }
+        #loader { text-align: center; margin-top: 35vh; color: var(--accent); font-weight: bold; }
     </style>
 </head>
 <body>
-
-    <input type="text" id="search" class="search-box" placeholder="🔍 Buscar en Kaelus...">
-
+    <input type="text" id="search" class="search-box" placeholder="🔍 Buscar canal o película...">
     <div class="filter-bar">
         <div class="pill active" onclick="filterData('TODOS', this)">🚀 TODO</div>
-        <div class="pill" onclick="filterData('⭐ FAVORITOS', this)">⭐ FAVORITOS</div>
+        <div class="pill" onclick="filterData('⭐ FAVORITOS', this)">⭐ FAVS</div>
         <div class="pill" onclick="filterData('⚽ DEPORTES', this)">⚽ DEPORTES</div>
         <div class="pill" onclick="filterData('🎬 CINE', this)">🎬 CINE</div>
         <div class="pill" onclick="filterData('📺 SERIES', this)">📺 SERIES</div>
     </div>
-
-    <div id="loader">🛰️ Sincronizando con Kaelus...</div>
+    <div id="loader">🛰️ Sincronizando Kaelus...</div>
     <div id="container"></div>
 
     <script>
         const tg = window.Telegram.WebApp;
-        const API_URL = "https://tu-app-en-render.onrender.com"; // CAMBIA ESTO POR TU URL REAL
-        const LOGO_DEFAULT = "logo.png"; 
-        
-        let allItems = []; 
-        let currentFilter = 'TODOS'; 
-        let currentSearchTerm = '';
+        const API_URL = "https://tu-app-en-render.onrender.com"; 
+        let allItems = [];
+        let currentFilter = 'TODOS';
+        let currentSearch = '';
 
         async function init() {
             try {
                 const res = await fetch(`${API_URL}/api/links`);
-                const items = await res.json();
-
-                if (items && items.length > 0) {
-                    allItems = items;
-                    applyFiltersAndSearch();
-                    document.getElementById('loader').style.display = 'none';
-                } else {
-                    document.getElementById('loader').innerText = "📭 No hay contenido disponible hoy.";
-                }
-            } catch (e) {
-                document.getElementById('loader').innerHTML = "❌ Error de conexión.<br><small>Reintentando...</small>";
-                setTimeout(init, 5000);
-            }
+                allItems = await res.json();
+                render();
+                document.getElementById('loader').style.display = 'none';
+            } catch (e) { setTimeout(init, 4000); }
         }
 
-        function renderItems(itemsToRender) {
+        function render() {
             const container = document.getElementById('container');
             const favs = JSON.parse(localStorage.getItem('bcntv_favs') || '[]');
+            let filtered = allItems;
 
-            if (itemsToRender.length === 0) {
-                container.innerHTML = `<div class="msg-empty">No se encontraron resultados para esta sección.</div>`;
-                return;
-            }
+            if (currentFilter === '⭐ FAVORITOS') filtered = filtered.filter(i => favs.includes(i.u));
+            else if (currentFilter !== 'TODOS') filtered = filtered.filter(i => i.cat === currentFilter);
+            
+            if (currentSearch) filtered = filtered.filter(i => i.t.toLowerCase().includes(currentSearch));
 
-            container.innerHTML = itemsToRender.map(i => {
-                const isFav = favs.includes(i.u);
-                return `
-                    <div class="card">
-                        <div class="logo-container">
-                            <img src="${i.img || LOGO_DEFAULT}" class="logo-img" onerror="this.src='${LOGO_DEFAULT}'">
-                        </div>
-                        <div class="info">
-                            <div class="cat-tag">${i.cat}</div>
-                            <div class="title">${i.t}</div>
-                        </div>
-                        <div class="actions">
-                            <button class="btn-fav ${isFav ? 'active' : ''}" onclick="toggleFav('${i.u}')">
-                                ${isFav ? '★' : '☆'}
-                            </button>
-                            <button class="btn-play" onclick="ver('${i.u}')">VER</button>
-                        </div>
+            container.innerHTML = filtered.map(i => `
+                <div class="card">
+                    <div class="logo-container"><img src="${i.img}" class="logo-img" onerror="this.src='logo.png'"></div>
+                    <div class="info">
+                        <div class="cat-tag">${i.cat}</div>
+                        <div class="title">${i.t}</div>
                     </div>
-                `;
-            }).join('');
+                    <div class="actions">
+                        <button class="btn-fav ${favs.includes(i.u) ? 'active' : ''}" onclick="toggleFav('${i.u}')">★</button>
+                        <button class="btn-play" onclick="tg.openLink('${i.u}')">VER</button>
+                    </div>
+                </div>
+            `).join('');
         }
 
         function toggleFav(url) {
             let favs = JSON.parse(localStorage.getItem('bcntv_favs') || '[]');
-            if (favs.includes(url)) {
-                favs = favs.filter(f => f !== url);
-            } else {
-                favs.push(url);
-            }
+            if (favs.includes(url)) favs = favs.filter(f => f !== url);
+            else favs.push(url);
             localStorage.setItem('bcntv_favs', JSON.stringify(favs));
             tg.HapticFeedback.impactOccurred('light');
-            applyFiltersAndSearch();
+            render();
         }
 
         function filterData(cat, el) {
@@ -132,31 +92,16 @@
             document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
             el.classList.add('active');
             currentFilter = cat;
-            applyFiltersAndSearch();
+            render();
         }
 
         document.getElementById('search').addEventListener('input', (e) => {
-            currentSearchTerm = e.target.value.toLowerCase();
-            applyFiltersAndSearch();
+            currentSearch = e.target.value.toLowerCase();
+            render();
         });
-
-        function applyFiltersAndSearch() {
-            let filtered = allItems;
-            if (currentFilter === '⭐ FAVORITOS') {
-                const favs = JSON.parse(localStorage.getItem('bcntv_favs') || '[]');
-                filtered = filtered.filter(i => favs.includes(i.u));
-            } else if (currentFilter !== 'TODOS') {
-                filtered = filtered.filter(i => i.cat === currentFilter);
-            }
-            if (currentSearchTerm) {
-                filtered = filtered.filter(i => i.t.toLowerCase().includes(currentSearchTerm));
-            }
-            renderItems(filtered);
-        }
 
         tg.ready();
         tg.expand();
-        tg.setHeaderColor('#000000'); 
         init();
     </script>
 </body>
