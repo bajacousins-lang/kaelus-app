@@ -1,33 +1,31 @@
 import os, time, threading, requests, hmac, hashlib, urllib.parse
-from datetime import datetime, timedelta
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from bs4 import BeautifulSoup
 from pymongo import MongoClient
+from datetime import datetime
 
 # --- CONFIGURACIÓN ---
 BOT_TOKEN = os.getenv("TELEGRAM_TOKEN")
-ADMIN_ID = str(os.getenv("ADMIN_ID"))
 MONGO_URI = os.getenv("MONGO_URI")
 
-# Conexión Singleton (Eficiencia de recursos)
-client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
-db = client['bcntv_database']
-cols = {"cache": db['cache_contenido'], "subs": db['suscripciones']}
+# Conexión Global Singleton (Optimiza recursos)
+try:
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+    db = client['bcntv_database']
+    client.admin.command('ping') # Verifica conexión
+except Exception as e:
+    print(f"CRÍTICO: Error conexión MongoDB: {e}")
 
 app = Flask(__name__)
-CORS(app) # Crucial para la compatibilidad con el frontend
+CORS(app) # Permite comunicación entre GitHub y Render
 
-# --- SEGURIDAD: VALIDACIÓN DE FIRMA ---
-def validar_telegram_data(init_data):
+# --- PROCESO: VALIDACIÓN DE FIRMA ---
+def validar_datos_telegram(init_data):
     try:
-        # Decodificar datos crudos enviados por la WebApp
-        parsed_data = dict(urllib.parse.parse_qsl(init_data))
-        hash_recibido = parsed_data.pop('hash', None)
-        # Reconstruir la cadena de verificación ordenada alfabéticamente
-        data_check_string = "\n".join([f"{k}={v}" for k, v in sorted(parsed_data.items())])
+        parsed = dict(urllib.parse.parse_qsl(init_data))
+        hash_recibido = parsed.pop('hash', None)
+        data_check_string = "\n".join([f"{k}={v}" for k, v in sorted(parsed.items())])
         
-        # Crear llave secreta con el Token del Bot
         secret_key = hmac.new(b"WebAppData", BOT_TOKEN.encode(), hashlib.sha256).digest()
         hash_calculado = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
         
@@ -37,21 +35,21 @@ def validar_telegram_data(init_data):
 
 @app.route('/api/autorizar', methods=['POST'])
 def api_auth():
-    data = request.json
-    raw_init = data.get('initData', '')
-    uid = str(data.get('uid')) # Forzamos String para compatibilidad total
-
-    # 1. Validación de Integridad Criptográfica
-    if not validar_telegram_data(raw_init):
-        return jsonify({"status": "forbidden", "msg": "Firma inválida"}), 403
-
-    # 2. Validación de Identidad
-    if uid == ADMIN_ID:
-        exp = (datetime.now() + timedelta(days=30)).isoformat()
-        cols['subs'].update_one({"_id": uid}, {"$set": {"expires": exp}}, upsert=True)
-        return jsonify({"status": "ok", "msg": "Premium activado"}), 200
-    
-    return jsonify({"status": "unauthorized"}), 401
+    try:
+        data = request.json
+        if not validar_datos_telegram(data.get('initData', '')):
+            return jsonify({"status": "forbidden"}), 403
+            
+        uid = str(data.get('uid'))
+        # Operación atómica: Actualiza o inserta sin bloquear
+        db.suscripciones.update_one(
+            {"_id": uid}, 
+            {"$set": {"last_active": datetime.now()}}, 
+            upsert=True
+        )
+        return jsonify({"status": "ok"}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": "Error interno"}), 500
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
