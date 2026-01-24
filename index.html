@@ -3,66 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>BCNTV Premium</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background: var(--tg-theme-bg-color, #0b0b0b); color: var(--tg-theme-text-color, #fff); font-family: sans-serif; text-align: center; }
-        .btn { background: var(--tg-theme-button-color, #00ff88); color: var(--tg-theme-button-text-color, #000); padding: 16px; border-radius: 12px; width: 85%; border: none; font-weight: bold; cursor: pointer; }
-        .btn:disabled { opacity: 0.5; cursor: wait; }
-        
-        /* Spinner para Cold Start */
-        .spinner { border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--tg-theme-button-color); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; display: none; margin: 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        :root { --accent: var(--tg-theme-button-color, #00ff88); }
+        body { background: var(--tg-theme-bg-color, #000); color: var(--tg-theme-text-color, #fff); font-family: sans-serif; padding: 15px; margin: 0; }
+        .search-box { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #333; background: #111; color: #fff; margin-bottom: 15px; box-sizing: border-box; outline: none; }
+        .search-box:focus { border-color: var(--accent); }
+        .card { background: var(--tg-theme-secondary-bg-color, #1a1a1a); border-radius: 12px; padding: 15px; border: 1px solid #333; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .status { font-size: 0.6rem; padding: 2px 5px; border-radius: 4px; font-weight: bold; text-transform: uppercase; }
+        .online { color: #00ff88; border: 1px solid #00ff88; }
+        .offline { color: #ff4444; border: 1px solid #ff4444; }
+        .category { font-size: 0.7rem; color: var(--accent); margin-bottom: 2px; }
+        .btn-play { background: var(--accent); color: var(--tg-theme-button-text-color, #000); border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        #loader { text-align: center; margin-top: 40vh; }
+        .spinner { border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid var(--accent); border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-    <div id="main-ui">
-        <h2 id="userName">Cargando datos...</h2>
-        <div id="loader" class="spinner"></div>
-        <button id="authBtn" class="btn" onclick="autorizar()">ACTIVAR PREMIUM</button>
-    </div>
+    <input type="text" id="search" class="search-box" placeholder="🔍 Buscar canal o deporte...">
+    <div id="loader"><div class="spinner"></div><p>Cargando canales...</p></div>
+    <div id="container"></div>
 
     <script>
         const tg = window.Telegram.WebApp;
-        const API_BASE = "https://tu-app-en-render.onrender.com"; 
+        // REEMPLAZA ESTA URL CON LA TUYA DE RENDER
+        const API_URL = "https://tu-app-en-render.onrender.com"; 
+
+        async function loadLinks() {
+            try {
+                const res = await fetch(`${API_URL}/api/links`);
+                if (!res.ok) throw new Error();
+                const items = await res.json();
+                render(items);
+                document.getElementById('loader').style.display = 'none';
+            } catch (e) {
+                setTimeout(loadLinks, 4000); // Reintento automático
+            }
+        }
+
+        function render(items) {
+            const container = document.getElementById('container');
+            container.innerHTML = items.map(i => `
+                <div class="card item-card" data-name="${i.t}">
+                    <div style="flex:1">
+                        <span class="status ${i.status}">${i.status}</span>
+                        <div class="category">${i.cat}</div>
+                        <div style="font-weight: bold;">${i.t}</div>
+                        <div style="font-size: 0.7rem; color: #888;">👁️ ${i.v || 0} vistas</div>
+                    </div>
+                    <button class="btn-play" onclick="go('${i.u}')">VER</button>
+                </div>
+            `).join('');
+        }
+
+        function go(url) {
+            tg.HapticFeedback.impactOccurred('medium');
+            fetch(`${API_URL}/api/click`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ url: url })
+            });
+            tg.openLink(url);
+        }
+
+        document.getElementById('search').addEventListener('input', (e) => {
+            const t = e.target.value.toLowerCase();
+            document.querySelectorAll('.item-card').forEach(c => {
+                c.style.display = c.getAttribute('data-name').toLowerCase().includes(t) ? 'flex' : 'none';
+            });
+        });
 
         tg.ready();
         tg.expand();
-
-        const user = tg.initDataUnsafe?.user;
-        if (user) {
-            document.getElementById("userName").innerText = `Hola, ${user.first_name}`;
-        }
-
-        async function autorizar() {
-            const btn = document.getElementById('authBtn');
-            const loader = document.getElementById('loader');
-            
-            btn.disabled = true;
-            loader.style.display = 'block';
-
-            try {
-                const response = await fetch(`${API_BASE}/api/autorizar`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        uid: user.id.toString(),
-                        initData: tg.initData 
-                    })
-                });
-
-                if (response.ok) {
-                    tg.HapticFeedback.notificationOccurred('success');
-                    tg.showPopup({ title: "¡Éxito!", message: "Suscripción validada." });
-                } else {
-                    tg.showAlert("Firma de seguridad inválida.");
-                }
-            } catch (e) {
-                tg.showAlert("El servidor está despertando. Reintenta en 10 segundos.");
-            } finally {
-                btn.disabled = false;
-                loader.style.display = 'none';
-            }
-        }
+        loadLinks();
     </script>
 </body>
 </html>
