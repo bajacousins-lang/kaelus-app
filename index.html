@@ -1,107 +1,456 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>BCNTV Premium</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        :root { --accent: #00ff88; --bg: #000; --card: #121212; }
-        body { background: var(--bg); color: #fff; font-family: -apple-system, sans-serif; padding: 15px; margin: 0; }
-        .search-box { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #333; background: #1a1a1a; color: #fff; margin-bottom: 15px; box-sizing: border-box; outline: none; }
-        .filter-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; position: sticky; top: 0; background: var(--bg); z-index: 10; }
-        .pill { background: #222; border: 1px solid #333; color: #888; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .pill.active { background: var(--accent); color: #000; border-color: var(--accent); }
-        .card { background: var(--card); border-radius: 12px; padding: 12px; border: 1px solid #222; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
-        .logo-container { width: 55px; height: 75px; flex-shrink: 0; border-radius: 8px; border: 1px solid #333; overflow: hidden; }
-        .logo-img { width: 100%; height: 100%; object-fit: cover; }
-        .info { flex-grow: 1; min-width: 0; }
-        .cat-tag { font-size: 9px; color: var(--accent); font-weight: bold; text-transform: uppercase; }
-        .title { font-weight: bold; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #eee; }
-        .actions { display: flex; align-items: center; gap: 10px; }
-        .btn-play { background: var(--accent); color: #000; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .btn-fav { background: none; border: none; font-size: 20px; cursor: pointer; color: #444; }
-        .btn-fav.active { color: #ffeb3b; }
-        #loader { text-align: center; margin-top: 35vh; color: var(--accent); font-weight: bold; }
-    </style>
-</head>
-<body>
-    <input type="text" id="search" class="search-box" placeholder="🔍 Buscar en BCNTV...">
-    <div class="filter-bar">
-        <div class="pill active" onclick="filterData('TODOS', this)">🚀 TODO</div>
-        <div class="pill" onclick="filterData('⭐ FAVORITOS', this)">⭐ FAVS</div>
-        <div class="pill" onclick="filterData('⚽ DEPORTES', this)">⚽ DEPORTES</div>
-        <div class="pill" onclick="filterData('🎬 CINE', this)">🎬 CINE</div>
-        <div class="pill" onclick="filterData('📺 SERIES', this)">📺 SERIES</div>
-    </div>
-    <div id="loader">🛰️ Conectando con Servidor...</div>
-    <div id="container"></div>
-
-    <script>
-        const tg = window.Telegram.WebApp;
-        const API_URL = "https://tu-app-en-render.onrender.com"; 
-        let allItems = [];
-        let currentFilter = 'TODOS';
-        let currentSearch = '';
-
-        async function init() {
-            try {
-                const res = await fetch(`${API_URL}/api/links`);
-                allItems = await res.json();
-                render();
-                document.getElementById('loader').style.display = 'none';
-            } catch (e) { setTimeout(init, 3000); }
-        }
-
-        function render() {
-            const container = document.getElementById('container');
-            const favs = JSON.parse(localStorage.getItem('bcntv_favs') || '[]');
-            let filtered = allItems;
-
-            if (currentFilter === '⭐ FAVORITOS') filtered = filtered.filter(i => favs.includes(i.u));
-            else if (currentFilter !== 'TODOS') filtered = filtered.filter(i => i.cat === currentFilter);
-            
-            if (currentSearch) filtered = filtered.filter(i => i.t.toLowerCase().includes(currentSearch));
-
-            container.innerHTML = filtered.map(i => `
-                <div class="card">
-                    <div class="logo-container"><img src="${i.img}" class="logo-img" onerror="this.src='logo.png'"></div>
-                    <div class="info">
-                        <div class="cat-tag">${i.cat}</div>
-                        <div class="title">${i.t}</div>
-                    </div>
-                    <div class="actions">
-                        <button class="btn-fav ${favs.includes(i.u) ? 'active' : ''}" onclick="toggleFav('${i.u}')">★</button>
-                        <button class="btn-play" onclick="tg.openLink('${i.u}')">VER</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function toggleFav(url) {
-            let favs = JSON.parse(localStorage.getItem('bcntv_favs') || '[]');
-            if (favs.includes(url)) favs = favs.filter(f => f !== url);
-            else favs.push(url);
-            localStorage.setItem('bcntv_favs', JSON.stringify(favs));
-            tg.HapticFeedback.impactOccurred('light');
-            render();
-        }
-
-        function filterData(cat, el) {
-            document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-            el.classList.add('active');
-            currentFilter = cat;
-            render();
-        }
-
-        document.getElementById('search').addEventListener('input', (e) => {
-            currentSearch = e.target.value.toLowerCase();
-            render();
-        });
-
-        tg.ready();
-        tg.expand();
-        init();
-    </script>
-</body>
-</html>
+diff --git a/index.html b/index.html
+index 1f786c98a445967cd51246838c7b4ef67e934d7a..86c7efab874d1c225649648b1114af70f6dd1945 100644
+--- a/index.html
++++ b/index.html
+@@ -1,107 +1,372 @@
+ <!DOCTYPE html>
+ <html lang="es">
+ <head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+     <title>BCNTV Premium</title>
+     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+     <style>
+         :root { --accent: #00ff88; --bg: #000; --card: #121212; }
+         body { background: var(--bg); color: #fff; font-family: -apple-system, sans-serif; padding: 15px; margin: 0; }
+         .search-box { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #333; background: #1a1a1a; color: #fff; margin-bottom: 15px; box-sizing: border-box; outline: none; }
+         .filter-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; position: sticky; top: 0; background: var(--bg); z-index: 10; }
+         .pill { background: #222; border: 1px solid #333; color: #888; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+         .pill.active { background: var(--accent); color: #000; border-color: var(--accent); }
+         .card { background: var(--card); border-radius: 12px; padding: 12px; border: 1px solid #222; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
+         .logo-container { width: 55px; height: 75px; flex-shrink: 0; border-radius: 8px; border: 1px solid #333; overflow: hidden; }
+         .logo-img { width: 100%; height: 100%; object-fit: cover; }
+         .info { flex-grow: 1; min-width: 0; }
+         .cat-tag { font-size: 9px; color: var(--accent); font-weight: bold; text-transform: uppercase; }
+         .title { font-weight: bold; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #eee; }
+         .actions { display: flex; align-items: center; gap: 10px; }
+         .btn-play { background: var(--accent); color: #000; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+-        .btn-fav { background: none; border: none; font-size: 20px; cursor: pointer; color: #444; }
+-        .btn-fav.active { color: #ffeb3b; }
+-        #loader { text-align: center; margin-top: 35vh; color: var(--accent); font-weight: bold; }
+-    </style>
+-</head>
+-<body>
+-    <input type="text" id="search" class="search-box" placeholder="🔍 Buscar en BCNTV...">
+-    <div class="filter-bar">
+-        <div class="pill active" onclick="filterData('TODOS', this)">🚀 TODO</div>
+-        <div class="pill" onclick="filterData('⭐ FAVORITOS', this)">⭐ FAVS</div>
+-        <div class="pill" onclick="filterData('⚽ DEPORTES', this)">⚽ DEPORTES</div>
+-        <div class="pill" onclick="filterData('🎬 CINE', this)">🎬 CINE</div>
+-        <div class="pill" onclick="filterData('📺 SERIES', this)">📺 SERIES</div>
+-    </div>
+-    <div id="loader">🛰️ Conectando con Servidor...</div>
+-    <div id="container"></div>
++        .btn-fav { background: none; border: none; font-size: 20px; cursor: pointer; color: #444; }
++        .btn-fav.active { color: #ffeb3b; }
++        #loader { text-align: center; margin-top: 35vh; color: var(--accent); font-weight: bold; }
++        #status { margin: 10px 0 15px; color: #ffc107; font-size: 12px; display: none; align-items: center; gap: 8px; }
++        #status[data-level="2"] { color: #ff9800; }
++        #status[data-level="3"] { color: #ff5252; }
++        #status-message { flex: 1; }
++        #status-close { background: none; border: none; color: #ffc107; font-size: 14px; cursor: pointer; }
++    </style>
++</head>
++<body>
++    <input type="text" id="search" class="search-box" placeholder="🔍 Buscar en BCNTV...">
++    <div class="filter-bar" id="filter-bar"></div>
++    <div id="status">
++        <span id="status-message"></span>
++        <button id="status-close" type="button" aria-label="Cerrar aviso">✕</button>
++    </div>
++    <div id="loader">🛰️ Conectando con Servidor...</div>
++    <div id="container"></div>
+ 
+     <script>
+-        const tg = window.Telegram.WebApp;
+-        const API_URL = "https://tu-app-en-render.onrender.com"; 
+-        let allItems = [];
+-        let currentFilter = 'TODOS';
+-        let currentSearch = '';
++        const tg = window.Telegram?.WebApp;
++        const API_URL = window.API_URL || "https://kaelus-bot.onrender.com";
++        let allItems = [];
++        let currentFilter = 'TODOS';
++        let currentSearch = '';
++        let retryCount = 0;
++        const maxRetries = 5;
++        const baseRetryDelay = 2000;
++        const fetchTimeoutMs = 10000;
++        let initInProgress = false;
++        let lastDropCount = 0;
++        let lastDropMessage = '';
++        let lastDropShown = false;
++        let currentStatusMessage = '';
++        let currentStatusLevel = 0;
++        const loaderDefaultText = '🛰️ Conectando con Servidor...';
++        const categoryAliases = {
++            '⚽ DEPORTES': '⚽ DEPORTES',
++            'DEPORTES': '⚽ DEPORTES',
++            '🎬 CINE': '🎬 CINE',
++            'CINE': '🎬 CINE',
++            '📺 SERIES': '📺 SERIES',
++            'SERIES': '📺 SERIES',
++        };
+ 
+-        async function init() {
+-            try {
+-                const res = await fetch(`${API_URL}/api/links`);
+-                allItems = await res.json();
+-                render();
+-                document.getElementById('loader').style.display = 'none';
+-            } catch (e) { setTimeout(init, 3000); }
+-        }
++        function showError(message) {
++            const loader = document.getElementById('loader');
++            loader.textContent = message;
++            loader.style.display = 'block';
++            if (!allItems.length) {
++                document.getElementById('container').innerHTML = '';
++            }
++            clearStatus();
++        }
++
++        function showStatus(message, level = 1, force = false) {
++            const status = document.getElementById('status');
++            const messageEl = document.getElementById('status-message');
++            if (!message) {
++                clearStatus();
++                return;
++            }
++            if (!force && currentStatusMessage && level < currentStatusLevel) {
++                return;
++            }
++            messageEl.textContent = message;
++            status.style.display = message ? 'flex' : 'none';
++            status.dataset.level = String(level);
++            currentStatusMessage = message;
++            currentStatusLevel = level;
++        }
++
++        function clearStatus() {
++            const status = document.getElementById('status');
++            const messageEl = document.getElementById('status-message');
++            messageEl.textContent = '';
++            status.style.display = 'none';
++            delete status.dataset.level;
++            currentStatusMessage = '';
++            currentStatusLevel = 0;
++        }
++
++        function sanitizeUrl(url) {
++            if (!url) return null;
++            try {
++                const parsed = new URL(String(url), window.location.href);
++                if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
++                    return parsed.href;
++                }
++            } catch (e) {
++                return null;
++            }
++            return null;
++        }
++
++        function sanitizeLinkUrl(url) {
++            return sanitizeUrl(url);
++        }
++
++        function normalizeItems(data) {
++            if (!Array.isArray(data)) return null;
++            let droppedInvalidUrl = 0;
++            let droppedMissingFields = 0;
++            const items = data
++                .filter(item => {
++                    if (!item || !item.u || !item.t) {
++                        droppedMissingFields += 1;
++                        return false;
++                    }
++                    return true;
++                })
++                .map(item => {
++                    const link = sanitizeLinkUrl(item.u);
++                    if (!link) {
++                        droppedInvalidUrl += 1;
++                        return null;
++                    }
++                    return {
++                        u: link,
++                        t: String(item.t),
++                        cat: normalizeCategory(item.cat),
++                        img: sanitizeUrl(item.img) || 'logo.png',
++                    };
++                })
++                .filter(Boolean);
++            lastDropCount = droppedInvalidUrl + droppedMissingFields;
++            lastDropMessage = '';
++            lastDropShown = false;
++            if (droppedInvalidUrl) {
++                console.warn(`Se descartaron ${droppedInvalidUrl} item(s) por URL inválida.`);
++            }
++            if (droppedMissingFields) {
++                console.warn(`Se descartaron ${droppedMissingFields} item(s) por campos faltantes.`);
++            }
++            if (lastDropCount) {
++                const parts = [];
++                if (droppedInvalidUrl) parts.push(`${droppedInvalidUrl} por URL inválida`);
++                if (droppedMissingFields) parts.push(`${droppedMissingFields} por datos incompletos`);
++                lastDropMessage = `⚠️ ${parts.join(' y ')}.`;
++            }
++            return items;
++        }
++
++        function normalizeCategory(cat) {
++            if (!cat) return 'SIN CATEGORÍA';
++            const raw = String(cat).trim();
++            return categoryAliases[raw.toUpperCase()] || raw;
++        }
++
++        function escapeHtml(value) {
++            return String(value)
++                .replace(/&/g, '&amp;')
++                .replace(/</g, '&lt;')
++                .replace(/>/g, '&gt;')
++                .replace(/"/g, '&quot;')
++                .replace(/'/g, '&#39;');
++        }
++
++        function safeOpenLink(url) {
++            const safeUrl = sanitizeLinkUrl(url);
++            if (!safeUrl) {
++                showStatus('⚠️ Enlace inválido. Actualiza la lista e intenta de nuevo.', 1);
++                return;
++            }
++            if (tg?.openLink) {
++                tg.openLink(safeUrl);
++            } else {
++                window.open(safeUrl, '_blank', 'noopener');
++            }
++        }
++
++        function safeGetFavs() {
++            try {
++                const parsed = JSON.parse(localStorage.getItem('bcntv_favs') || '[]');
++                return Array.isArray(parsed) ? parsed : [];
++            } catch (e) {
++                return [];
++            }
++        }
++
++        function safeSetFavs(favs) {
++            try {
++                localStorage.setItem('bcntv_favs', JSON.stringify(favs));
++            } catch (e) {
++                // Ignore storage errors (e.g., private mode)
++            }
++        }
++
++        async function init() {
++            if (initInProgress) return;
++            initInProgress = true;
++            lastDropCount = 0;
++            lastDropMessage = '';
++            lastDropShown = false;
++            let timeoutId = null;
++            try {
++                const controller = new AbortController();
++                timeoutId = setTimeout(() => controller.abort(), fetchTimeoutMs);
++                const res = await fetch(`${API_URL}/api/links`, { signal: controller.signal });
++                if (!res.ok) {
++                    throw new Error(`Error ${res.status}`);
++                }
++                const data = await res.json();
++                const normalized = normalizeItems(data);
++                if (normalized === null) {
++                    throw new Error('Respuesta inválida del servidor.');
++                }
++                allItems = normalized;
++                buildFilters();
++                render();
++                const loader = document.getElementById('loader');
++                loader.textContent = loaderDefaultText;
++                loader.style.display = 'none';
++                retryCount = 0;
++                clearStatus();
++            } catch (e) {
++                retryCount += 1;
++                if (retryCount > maxRetries) {
++                    showError('❌ No se pudo conectar. Verifica tu conexión y reintenta.');
++                    return;
++                }
++                if (e.name === 'AbortError') {
++                    showError(`⏱️ Tiempo de espera agotado. Reintentando (${retryCount}/${maxRetries})...`);
++                } else if (e.message === 'Respuesta inválida del servidor.') {
++                    showError(`⚠️ Respuesta inválida. Reintentando (${retryCount}/${maxRetries})...`);
++                } else {
++                    showError(`❌ Error al conectar. Reintentando (${retryCount}/${maxRetries})...`);
++                }
++                const delay = baseRetryDelay * retryCount;
++                setTimeout(init, delay);
++            } finally {
++                if (timeoutId) {
++                    clearTimeout(timeoutId);
++                }
++                initInProgress = false;
++            }
++        }
++
++        function buildFilters() {
++            const filterBar = document.getElementById('filter-bar');
++            const categories = Array.from(new Set(allItems.map(item => item.cat))).sort((a, b) => a.localeCompare(b));
++            const pills = [
++                { label: '🚀 TODO', value: 'TODOS' },
++                { label: '⭐ FAVS', value: '⭐ FAVORITOS' },
++                ...categories.map(cat => ({ label: cat, value: cat })),
++            ];
++            filterBar.innerHTML = pills.map(pill => `
++                <div class="pill ${pill.value === currentFilter ? 'active' : ''}" onclick="filterData(${JSON.stringify(pill.value)}, this)">${escapeHtml(pill.label)}</div>
++            `).join('');
++            if (!pills.some(pill => normalizeCategoryKey(pill.value) === normalizeCategoryKey(currentFilter))) {
++                currentFilter = 'TODOS';
++                filterBar.querySelector('.pill')?.classList.add('active');
++            }
++        }
++
++        function render() {
++            const container = document.getElementById('container');
++            const favs = safeGetFavs();
++            let filtered = allItems;
++
++            if (currentFilter === '⭐ FAVORITOS') filtered = filtered.filter(i => favs.includes(i.u));
++            else if (currentFilter !== 'TODOS') filtered = filtered.filter(i => normalizeCategoryKey(i.cat) === normalizeCategoryKey(currentFilter));
++            
++            if (currentSearch) {
++                const normalizedSearch = normalizeSearch(currentSearch);
++                filtered = filtered.filter(i => normalizeSearch(i.t).includes(normalizedSearch));
++            }
++
++            if (lastDropMessage && !lastDropShown) {
++                showStatus(lastDropMessage, 2, true);
++                lastDropShown = true;
++            }
++
++            if (filtered.length === 0) {
++                const emptyNote = lastDropMessage ? `<div class="cat-tag">${escapeHtml(lastDropMessage)}</div>` : '';
++                container.innerHTML = `
++                <div class="card">
++                    <div class="info">
++                        <div class="title">No hay resultados para mostrar.</div>
++                        ${emptyNote}
++                    </div>
++                </div>
++            `;
++                return;
++            }
++
++            container.innerHTML = filtered.map(i => {
++                const safeUrl = JSON.stringify(i.u);
++                const safeCat = escapeHtml(i.cat);
++                const safeTitle = escapeHtml(i.t);
++                const safeImg = escapeHtml(i.img);
++                return `
++                <div class="card">
++                    <div class="logo-container"><img src="${safeImg}" class="logo-img" loading="lazy" onerror="this.src='logo.png'"></div>
++                    <div class="info">
++                        <div class="cat-tag">${safeCat}</div>
++                        <div class="title">${safeTitle}</div>
++                    </div>
++                    <div class="actions">
++                        <button class="btn-fav ${favs.includes(i.u) ? 'active' : ''}" onclick="toggleFav(${safeUrl})">★</button>
++                        <button class="btn-play" onclick="safeOpenLink(${safeUrl})">VER</button>
++                    </div>
++                </div>
++            `;
++            }).join('');
++        }
++
++        function normalizeSearch(value) {
++            return String(value)
++                .normalize('NFD')
++                .replace(/[\u0300-\u036f]/g, '')
++                .toLowerCase();
++        }
++
++        function normalizeCategoryKey(value) {
++            return normalizeSearch(value).replace(/\s+/g, ' ').trim();
++        }
+ 
+-        function render() {
+-            const container = document.getElementById('container');
+-            const favs = JSON.parse(localStorage.getItem('bcntv_favs') || '[]');
+-            let filtered = allItems;
++        function toggleFav(url) {
++            let favs = safeGetFavs();
++            if (favs.includes(url)) favs = favs.filter(f => f !== url);
++            else favs.push(url);
++            safeSetFavs(favs);
++            tg?.HapticFeedback?.impactOccurred('light');
++            render();
++        }
+ 
+-            if (currentFilter === '⭐ FAVORITOS') filtered = filtered.filter(i => favs.includes(i.u));
+-            else if (currentFilter !== 'TODOS') filtered = filtered.filter(i => i.cat === currentFilter);
+-            
+-            if (currentSearch) filtered = filtered.filter(i => i.t.toLowerCase().includes(currentSearch));
++        function filterData(cat, el) {
++            document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
++            if (el) {
++                el.classList.add('active');
++            }
++            currentFilter = cat;
++            render();
++        }
++
++        document.getElementById('search').addEventListener('input', (e) => {
++            currentSearch = e.target.value;
++            render();
++        });
++
++        document.getElementById('status-close').addEventListener('click', () => clearStatus());
+ 
+-            container.innerHTML = filtered.map(i => `
+-                <div class="card">
+-                    <div class="logo-container"><img src="${i.img}" class="logo-img" onerror="this.src='logo.png'"></div>
+-                    <div class="info">
+-                        <div class="cat-tag">${i.cat}</div>
+-                        <div class="title">${i.t}</div>
+-                    </div>
+-                    <div class="actions">
+-                        <button class="btn-fav ${favs.includes(i.u) ? 'active' : ''}" onclick="toggleFav('${i.u}')">★</button>
+-                        <button class="btn-play" onclick="tg.openLink('${i.u}')">VER</button>
+-                    </div>
+-                </div>
+-            `).join('');
+-        }
+-
+-        function toggleFav(url) {
+-            let favs = JSON.parse(localStorage.getItem('bcntv_favs') || '[]');
+-            if (favs.includes(url)) favs = favs.filter(f => f !== url);
+-            else favs.push(url);
+-            localStorage.setItem('bcntv_favs', JSON.stringify(favs));
+-            tg.HapticFeedback.impactOccurred('light');
+-            render();
+-        }
+-
+-        function filterData(cat, el) {
+-            document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+-            el.classList.add('active');
+-            currentFilter = cat;
+-            render();
+-        }
+-
+-        document.getElementById('search').addEventListener('input', (e) => {
+-            currentSearch = e.target.value.toLowerCase();
+-            render();
+-        });
+-
+-        tg.ready();
+-        tg.expand();
+-        init();
+-    </script>
+-</body>
+-</html>
++        tg?.ready?.();
++        tg?.expand?.();
++        init();
++    </script>
++</body>
++</html>
