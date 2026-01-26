@@ -1,474 +1,538 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>BCNTV Premium</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        :root { --accent: #00ff88; --bg: #000; --card: #121212; }
-        body { background: var(--bg); color: #fff; font-family: -apple-system, sans-serif; padding: 15px; margin: 0; }
-        .search-box { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #333; background: #1a1a1a; color: #fff; margin-bottom: 15px; box-sizing: border-box; outline: none; }
-        .filter-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; position: sticky; top: 0; background: var(--bg); z-index: 10; }
-        .pill { background: #222; border: 1px solid #333; color: #888; padding: 8px 16px; border-radius: 20px; white-space: nowrap; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .pill.active { background: var(--accent); color: #000; border-color: var(--accent); }
-        .card { background: var(--card); border-radius: 12px; padding: 12px; border: 1px solid #222; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
-        .logo-container { width: 55px; height: 75px; flex-shrink: 0; border-radius: 8px; border: 1px solid #333; overflow: hidden; }
-        .logo-img { width: 100%; height: 100%; object-fit: cover; }
-        .info { flex-grow: 1; min-width: 0; }
-        .cat-tag { font-size: 9px; color: var(--accent); font-weight: bold; text-transform: uppercase; }
-        .title { font-weight: bold; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #eee; }
-        .actions { display: flex; align-items: center; gap: 10px; }
-        .btn-play { background: var(--accent); color: #000; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .btn-fav { background: none; border: none; font-size: 20px; cursor: pointer; color: #444; }
-        .btn-fav.active { color: #ffeb3b; }
-        #loader { text-align: center; margin-top: 35vh; color: var(--accent); font-weight: bold; }
-        #status { margin: 10px 0 15px; color: #ffc107; font-size: 12px; display: none; align-items: center; gap: 8px; }
-        #status[data-level="2"] { color: #ff9800; }
-        #status[data-level="3"] { color: #ff5252; }
-        #status-message { flex: 1; }
-        #status-close { background: none; border: none; color: #ffc107; font-size: 14px; cursor: pointer; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>BCNTV Premium</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root { --accent:#00ff88; --bg:#000; --card:#121212; --muted:#9aa0a6; }
+    body { background:var(--bg); color:#fff; font-family:-apple-system, sans-serif; padding:15px; margin:0; }
+    .search-box { width:100%; padding:12px; border-radius:10px; border:1px solid #333; background:#1a1a1a; color:#fff; margin-bottom:12px; box-sizing:border-box; outline:none; }
+    .filter-bar { display:flex; gap:8px; overflow-x:auto; padding-bottom:10px; scrollbar-width:none; position:sticky; top:0; background:var(--bg); z-index:10; }
+    .subfilter-bar { display:flex; gap:8px; overflow-x:auto; padding-bottom:12px; scrollbar-width:none; }
+    .pill { background:#222; border:1px solid #333; color:#888; padding:8px 16px; border-radius:20px; white-space:nowrap; font-size:12px; font-weight:800; cursor:pointer; transition:.2s; user-select:none; }
+    .pill.active { background:var(--accent); color:#000; border-color:var(--accent); }
+    .section-title { margin:14px 0 8px; font-weight:900; color:#e6e6e6; letter-spacing:.2px; }
+    .hint { font-size:12px; color:var(--muted); margin-top:-4px; margin-bottom:10px; }
+    .card { background:var(--card); border-radius:12px; padding:12px; border:1px solid #222; margin-bottom:10px; display:flex; align-items:center; gap:12px; cursor:pointer; }
+    .card:active { transform: scale(.995); }
+    .logo-container { width:55px; height:75px; flex-shrink:0; border-radius:8px; border:1px solid #333; overflow:hidden; background:#0b0b0b; }
+    .logo-img { width:100%; height:100%; object-fit:cover; }
+    .info { flex-grow:1; min-width:0; }
+    .cat-tag { font-size:10px; color:var(--accent); font-weight:900; text-transform:uppercase; }
+    .title { font-weight:900; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#eee; }
+    .meta { font-size:12px; color:var(--muted); margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .actions { display:flex; align-items:center; gap:8px; }
+    .btn-fav { background:none; border:none; font-size:22px; cursor:pointer; color:#444; padding:4px; }
+    .btn-fav.active { color:#ffeb3b; }
+    #loader { text-align:center; margin-top:35vh; color:var(--accent); font-weight:900; }
+    #status { margin:10px 0 12px; color:#ffc107; font-size:12px; display:none; align-items:center; gap:8px; }
+    #status[data-level="2"] { color:#ff9800; }
+    #status[data-level="3"] { color:#ff5252; }
+    #status-message { flex:1; }
+    #status-close { background:none; border:none; color:#ffc107; font-size:14px; cursor:pointer; }
 
-        /* MODAL */
-        #infoModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:9999; padding:18px; box-sizing:border-box; }
-        #infoModalPanel { max-width:520px; margin:12vh auto 0; background:#121212; border:1px solid #222; border-radius:16px; padding:14px; }
-        #modalTop { display:flex; align-items:flex-start; gap:12px; }
-        #modalImgWrap { width:72px; height:96px; border-radius:10px; overflow:hidden; border:1px solid #333; flex-shrink:0; }
-        #modalImg { width:100%; height:100%; object-fit:cover; }
-        #modalCat { font-size:10px; color:var(--accent); font-weight:800; text-transform:uppercase; }
-        #modalTitle { margin-top:6px; font-size:16px; font-weight:800; color:#eee; line-height:1.25; word-break:break-word; }
-        #modalNote { margin-top:10px; font-size:12px; color:#aaa; }
-        #modalCloseBtn { background:none; border:none; color:#bbb; font-size:18px; cursor:pointer; line-height:1; }
-        #modalActions { display:flex; gap:10px; margin-top:14px; justify-content:flex-end; }
-        #modalCopyBtn { background:#222; border:1px solid #333; color:#ddd; padding:10px 12px; border-radius:10px; font-weight:700; cursor:pointer; }
-        #modalOkBtn { background:var(--accent); border:none; color:#000; padding:10px 14px; border-radius:10px; font-weight:900; cursor:pointer; }
-    </style>
+    /* Modal */
+    #modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.65); display:none; align-items:center; justify-content:center; z-index:999; padding:16px; }
+    #modal { width:min(520px, 100%); background:#0f0f0f; border:1px solid #2a2a2a; border-radius:14px; padding:14px; box-shadow:0 20px 60px rgba(0,0,0,.45); }
+    #modal h3 { margin:0 0 6px; font-size:16px; }
+    #modal .modal-cat { color:var(--accent); font-weight:900; font-size:12px; text-transform:uppercase; margin-bottom:10px; }
+    #modal .modal-body { font-size:13px; color:#ddd; line-height:1.4; }
+    #modal .kv { margin:6px 0; color:#cfcfcf; }
+    #modal .kv b { color:#fff; }
+    #modal .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:12px; }
+    .btn { border:none; border-radius:10px; padding:10px 12px; font-weight:900; cursor:pointer; }
+    .btn.primary { background:var(--accent); color:#000; }
+    .btn.ghost { background:#1a1a1a; color:#fff; border:1px solid #333; }
+    .vip-lock { background:#111; border:1px solid #333; border-radius:12px; padding:14px; margin:12px 0; }
+    .vip-lock b { color:var(--accent); }
+  </style>
 </head>
 <body>
-    <input type="text" id="search" class="search-box" placeholder="🔍 Buscar en BCNTV...">
-    <div class="filter-bar" id="filter-bar"></div>
-    <div id="status">
-        <span id="status-message"></span>
-        <button id="status-close" type="button" aria-label="Cerrar aviso">✕</button>
-    </div>
-    <div id="loader">🛰️ Conectando con Servidor...</div>
-    <div id="container"></div>
+  <input type="text" id="search" class="search-box" placeholder="🔍 Buscar en BCNTV..." />
+  <div class="filter-bar" id="filter-bar"></div>
+  <div class="subfilter-bar" id="subfilter-bar" style="display:none;"></div>
 
-    <!-- MODAL INFO -->
-    <div id="infoModal" aria-hidden="true">
-        <div id="infoModalPanel" role="dialog" aria-modal="true">
-            <div id="modalTop">
-                <div id="modalImgWrap">
-                    <img id="modalImg" src="logo.png" onerror="this.src='logo.png'">
-                </div>
-                <div style="flex:1; min-width:0;">
-                    <div id="modalCat"></div>
-                    <div id="modalTitle"></div>
-                    <div id="modalNote">ℹ️ Información mostrada dentro de la app.</div>
-                </div>
-                <button id="modalCloseBtn" type="button" aria-label="Cerrar">✕</button>
-            </div>
-            <div id="modalActions">
-                <button id="modalCopyBtn" type="button">Copiar</button>
-                <button id="modalOkBtn" type="button">OK</button>
-            </div>
+  <div id="status">
+    <span id="status-message"></span>
+    <button id="status-close" type="button" aria-label="Cerrar aviso">✕</button>
+  </div>
+
+  <div id="loader">🛰️ Conectando con Servidor...</div>
+  <div id="vip-lock" class="vip-lock" style="display:none;">
+    🔒 <b>Zona VIP</b>. Si no ves contenido, solicita acceso desde el bot.
+  </div>
+
+  <div id="container"></div>
+
+  <!-- Modal -->
+  <div id="modal-backdrop" role="dialog" aria-modal="true">
+    <div id="modal">
+      <h3 id="modal-title"></h3>
+      <div class="modal-cat" id="modal-cat"></div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-actions">
+        <button class="btn ghost" id="modal-copy">Copiar</button>
+        <button class="btn primary" id="modal-close">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    const API_URL = window.API_URL || "https://kaelus-bot.onrender.com";
+
+    // (Opcional) link a tu bot si quieres un botón “solicitar” más directo:
+    // const BOT_LINK = "https://t.me/TU_BOT_USERNAME";
+    const BOT_LINK = "";
+
+    const PRIMARY_FILTERS = [
+      { key: "ALL", label: "🚀 TODO" },
+      { key: "FAVS", label: "⭐ FAVS" },
+      { key: "SPORT", label: "⚽ DEPORTES" },
+      { key: "MOVIE", label: "🎬 PELÍCULAS" },
+      { key: "SERIES", label: "📺 SERIES" },
+    ];
+
+    let allItems = [];
+    let primary = "ALL";
+    let subfilter = "ALL";
+    let currentSearch = "";
+    let retryCount = 0;
+    const maxRetries = 5;
+    const baseRetryDelay = 2000;
+    const fetchTimeoutMs = 12000;
+    let initInProgress = false;
+    let lastFetchAt = 0;
+
+    function showError(message) {
+      const loader = document.getElementById("loader");
+      loader.textContent = message;
+      loader.style.display = "block";
+      if (!allItems.length) document.getElementById("container").innerHTML = "";
+      clearStatus();
+    }
+
+    function showStatus(message, level = 1) {
+      const status = document.getElementById("status");
+      const messageEl = document.getElementById("status-message");
+      if (!message) return clearStatus();
+      messageEl.textContent = message;
+      status.style.display = "flex";
+      status.dataset.level = String(level);
+    }
+
+    function clearStatus() {
+      const status = document.getElementById("status");
+      const messageEl = document.getElementById("status-message");
+      messageEl.textContent = "";
+      status.style.display = "none";
+      delete status.dataset.level;
+    }
+
+    function sanitizeUrl(url) {
+      if (!url) return null;
+      try {
+        const parsed = new URL(String(url), window.location.href);
+        if (parsed.protocol === "http:" || parsed.protocol === "https:") return parsed.href;
+      } catch (e) { return null; }
+      return null;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    function itemKey(it) {
+      return it?._id || it?.u || it?.t || "";
+    }
+
+    function safeGetFavs() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem("bcntv_favs") || "[]");
+        return Array.isArray(parsed) ? parsed : [];
+      } catch { return []; }
+    }
+
+    function safeSetFavs(favs) {
+      try { localStorage.setItem("bcntv_favs", JSON.stringify(favs)); } catch {}
+    }
+
+    function toggleFav(key) {
+      let favs = safeGetFavs();
+      if (favs.includes(key)) favs = favs.filter(f => f !== key);
+      else favs.push(key);
+      safeSetFavs(favs);
+      tg?.HapticFeedback?.impactOccurred?.("light");
+      render();
+    }
+
+    function normalizeSearch(value) {
+      return String(value)
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+    }
+
+    function isType(it, want) {
+      const type = it?.meta?.type || "";
+      if (want === "SPORT") return type === "sport";
+      if (want === "MOVIE") return type === "movie";
+      if (want === "SERIES") return type === "series";
+      return true;
+    }
+
+    function buildPrimaryFilters() {
+      const bar = document.getElementById("filter-bar");
+      bar.innerHTML = PRIMARY_FILTERS.map(p => `
+        <div class="pill ${p.key === primary ? "active" : ""}"
+             onclick="setPrimary('${p.key}')">${escapeHtml(p.label)}</div>
+      `).join("");
+    }
+
+    function computeSubfilters() {
+      // subfiltros:
+      // - Deportes: por cat (LaLiga/UFC/Grand Slam/etc.)
+      // - Pelis/Series: por section (Estrenos/Nuevos Episodios/Géneros/Novedades)
+      const items = allItems.filter(it => isType(it, primary));
+      const subBar = document.getElementById("subfilter-bar");
+
+      let options = ["ALL"];
+      if (primary === "SPORT") {
+        const cats = Array.from(new Set(items.map(it => it.cat).filter(Boolean)));
+        options = ["ALL", ...cats];
+      } else if (primary === "MOVIE" || primary === "SERIES") {
+        const secs = Array.from(new Set(items.map(it => it?.meta?.section).filter(Boolean)));
+        options = ["ALL", ...secs];
+      } else {
+        subBar.style.display = "none";
+        subfilter = "ALL";
+        return;
+      }
+
+      subBar.style.display = "flex";
+      subBar.innerHTML = options.map(opt => {
+        const label = opt === "ALL" ? "🧠 TODO" : opt;
+        const active = opt === subfilter ? "active" : "";
+        const safe = escapeHtml(label);
+        return `<div class="pill ${active}" onclick="setSubfilter(${JSON.stringify(opt)})">${safe}</div>`;
+      }).join("");
+
+      // si subfilter ya no existe, reset
+      if (!options.includes(subfilter)) subfilter = "ALL";
+    }
+
+    function setPrimary(key) {
+      primary = key;
+      subfilter = "ALL";
+      buildPrimaryFilters();
+      computeSubfilters();
+      tg?.HapticFeedback?.impactOccurred?.("light");
+      render();
+    }
+
+    function setSubfilter(key) {
+      subfilter = key;
+      computeSubfilters();
+      tg?.HapticFeedback?.impactOccurred?.("light");
+      render();
+    }
+
+    function openModal(it) {
+      const titleEl = document.getElementById("modal-title");
+      const catEl = document.getElementById("modal-cat");
+      const bodyEl = document.getElementById("modal-body");
+      const backdrop = document.getElementById("modal-backdrop");
+
+      titleEl.textContent = it?.t || "Detalle";
+      catEl.textContent = it?.cat || "";
+
+      const meta = it?.meta || {};
+      const lines = [];
+
+      if (meta.type === "sport") {
+        if (meta.competition) lines.push(`<div class="kv"><b>Liga:</b> ${escapeHtml(meta.competition)}</div>`);
+        if (meta.jornada) lines.push(`<div class="kv"><b>Jornada:</b> ${escapeHtml(meta.jornada)}</div>`);
+        if (meta.venue) lines.push(`<div class="kv"><b>Sede:</b> ${escapeHtml(meta.venue)}</div>`);
+        const time = [meta.hora_original, meta.timezone].filter(Boolean).join(" ");
+        if (time) lines.push(`<div class="kv"><b>Hora:</b> ${escapeHtml(time)}</div>`);
+        if (meta.canal) lines.push(`<div class="kv"><b>Canal:</b> ${escapeHtml(meta.canal)}</div>`);
+        if (meta.ronda) lines.push(`<div class="kv"><b>Ronda:</b> ${escapeHtml(meta.ronda)}</div>`);
+        if (meta.date_label) lines.push(`<div class="kv"><b>Fecha:</b> ${escapeHtml(meta.date_label)}</div>`);
+      } else {
+        const flags = Array.isArray(meta.flags) ? meta.flags.join(" • ") : "";
+        if (flags) lines.push(`<div class="kv"><b>Audio/Sub:</b> ${escapeHtml(flags)}</div>`);
+        if (meta.quality) lines.push(`<div class="kv"><b>Calidad:</b> ${escapeHtml(meta.quality)}</div>`);
+        if (meta.se) lines.push(`<div class="kv"><b>Temporada/Ep:</b> ${escapeHtml(meta.se)}</div>`);
+        if (meta.section) lines.push(`<div class="kv"><b>Sección:</b> ${escapeHtml(meta.section)}</div>`);
+        if (meta.date_label) lines.push(`<div class="kv"><b>Día:</b> ${escapeHtml(meta.date_label)}</div>`);
+      }
+
+      bodyEl.innerHTML = lines.join("") || `<div class="kv">Sin datos adicionales.</div>`;
+      backdrop.style.display = "flex";
+      tg?.HapticFeedback?.impactOccurred?.("light");
+    }
+
+    function closeModal() {
+      document.getElementById("modal-backdrop").style.display = "none";
+    }
+
+    function copyModal() {
+      const title = document.getElementById("modal-title").textContent || "";
+      const cat = document.getElementById("modal-cat").textContent || "";
+      const body = document.getElementById("modal-body").innerText || "";
+      const text = `${title}\n${cat}\n${body}`.trim();
+      navigator.clipboard?.writeText(text);
+      showStatus("✅ Copiado.", 1);
+    }
+
+    function renderSectionHeader(text) {
+      return `<div class="section-title">${escapeHtml(text)}</div>`;
+    }
+
+    function renderItemCard(it) {
+      const favs = safeGetFavs();
+      const key = itemKey(it);
+      const img = sanitizeUrl(it.img) || "logo.png";
+      const title = escapeHtml(it.t || "");
+      const cat = escapeHtml(it.cat || "");
+      const meta = it.meta || {};
+
+      let metaLine = "";
+      if (meta.type === "sport") {
+        const pieces = [];
+        if (meta.venue) pieces.push(meta.venue);
+        const time = [meta.hora_original, meta.timezone].filter(Boolean).join(" ");
+        if (time) pieces.push(time);
+        if (meta.canal) pieces.push(meta.canal);
+        metaLine = escapeHtml(pieces.join(" • "));
+      } else {
+        const pieces = [];
+        if (meta.se) pieces.push(meta.se);
+        if (Array.isArray(meta.flags) && meta.flags.length) pieces.push(meta.flags.slice(0,2).join(" "));
+        if (meta.quality) pieces.push(meta.quality);
+        metaLine = escapeHtml(pieces.join(" • "));
+      }
+
+      return `
+        <div class="card" onclick="window.__openItem(${JSON.stringify(key)})">
+          <div class="logo-container">
+            <img src="${escapeHtml(img)}" class="logo-img" loading="lazy" onerror="this.src='logo.png'">
+          </div>
+          <div class="info">
+            <div class="cat-tag">${cat}</div>
+            <div class="title">${title}</div>
+            <div class="meta">${metaLine}</div>
+          </div>
+          <div class="actions">
+            <button class="btn-fav ${favs.includes(key) ? "active" : ""}"
+                    onclick="event.stopPropagation(); toggleFav(${JSON.stringify(key)})"
+                    aria-label="Favorito">★</button>
+          </div>
         </div>
-    </div>
+      `;
+    }
 
-    <script>
-        const tg = window.Telegram?.WebApp;
-        const API_URL = window.API_URL || "https://kaelus-bot.onrender.com";
+    function applyFilters(items) {
+      let out = items.slice();
+      const favs = safeGetFavs();
 
-        let allItems = [];
-        let currentFilter = 'TODOS';
-        let currentSearch = '';
-        let retryCount = 0;
-        const maxRetries = 5;
-        const baseRetryDelay = 2000;
-        const fetchTimeoutMs = 10000;
-        let initInProgress = false;
+      if (primary === "FAVS") out = out.filter(it => favs.includes(itemKey(it)));
+      else if (primary !== "ALL") out = out.filter(it => isType(it, primary));
 
-        let lastDropCount = 0;
-        let lastDropMessage = '';
-        let lastDropShown = false;
+      if (subfilter !== "ALL") {
+        if (primary === "SPORT") out = out.filter(it => (it.cat || "") === subfilter);
+        if (primary === "MOVIE" || primary === "SERIES") out = out.filter(it => (it?.meta?.section || "") === subfilter);
+      }
 
-        let currentStatusMessage = '';
-        let currentStatusLevel = 0;
-        const loaderDefaultText = '🛰️ Conectando con Servidor...';
+      if (currentSearch) {
+        const q = normalizeSearch(currentSearch);
+        out = out.filter(it => {
+          const t = normalizeSearch(it.t || "");
+          const cat = normalizeSearch(it.cat || "");
+          const canal = normalizeSearch(it?.meta?.canal || "");
+          const venue = normalizeSearch(it?.meta?.venue || "");
+          const comp = normalizeSearch(it?.meta?.competition || "");
+          return t.includes(q) || cat.includes(q) || canal.includes(q) || venue.includes(q) || comp.includes(q);
+        });
+      }
 
-        // Mapa rápido: u -> item (para abrir modal sin buscar)
-        const itemsByUrl = new Map();
+      return out;
+    }
 
-        const categoryAliases = {
-            '⚽ DEPORTES': '⚽ DEPORTES',
-            'DEPORTES': '⚽ DEPORTES',
-            '🎬 CINE': '🎬 CINE',
-            'CINE': '🎬 CINE',
-            '📺 SERIES': '📺 SERIES',
-            'SERIES': '📺 SERIES',
-        };
+    function render() {
+      const container = document.getElementById("container");
+      const loader = document.getElementById("loader");
 
-        function showError(message) {
-            const loader = document.getElementById('loader');
-            loader.textContent = message;
-            loader.style.display = 'block';
-            if (!allItems.length) {
-                document.getElementById('container').innerHTML = '';
-            }
-            clearStatus();
-        }
+      const filtered = applyFilters(allItems);
 
-        function showStatus(message, level = 1, force = false) {
-            const status = document.getElementById('status');
-            const messageEl = document.getElementById('status-message');
-            if (!message) {
-                clearStatus();
-                return;
-            }
-            if (!force && currentStatusMessage && level < currentStatusLevel) {
-                return;
-            }
-            messageEl.textContent = message;
-            status.style.display = 'flex';
-            status.dataset.level = String(level);
-            currentStatusMessage = message;
-            currentStatusLevel = level;
-        }
+      loader.style.display = allItems.length ? "none" : "block";
 
-        function clearStatus() {
-            const status = document.getElementById('status');
-            const messageEl = document.getElementById('status-message');
-            messageEl.textContent = '';
-            status.style.display = 'none';
-            delete status.dataset.level;
-            currentStatusMessage = '';
-            currentStatusLevel = 0;
-        }
+      if (!filtered.length) {
+        container.innerHTML = `
+          <div class="card" style="cursor:default;">
+            <div class="info">
+              <div class="title">No hay resultados para mostrar.</div>
+              <div class="meta">Prueba otro filtro o espera a que el servidor actualice.</div>
+            </div>
+          </div>
+        `;
+        return;
+      }
 
-        function sanitizeUrl(url) {
-            if (!url) return null;
-            try {
-                const parsed = new URL(String(url), window.location.href);
-                if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-                    return parsed.href;
-                }
-            } catch (e) {
-                return null;
-            }
-            return null;
-        }
+      // Render agrupado
+      let html = "";
 
-        function sanitizeLinkUrl(url) {
-            return sanitizeUrl(url);
-        }
-
-        function normalizeCategory(cat) {
-            if (!cat) return 'SIN CATEGORÍA';
-            const raw = String(cat).trim();
-            return categoryAliases[raw.toUpperCase()] || raw;
-        }
-
-        function normalizeItems(data) {
-            if (!Array.isArray(data)) return null;
-
-            let droppedInvalidUrl = 0;
-            let droppedMissingFields = 0;
-
-            const items = data
-                .filter(item => {
-                    if (!item || !item.u || !item.t) {
-                        droppedMissingFields += 1;
-                        return false;
-                    }
-                    return true;
-                })
-                .map(item => {
-                    const link = sanitizeLinkUrl(item.u);
-                    if (!link) {
-                        droppedInvalidUrl += 1;
-                        return null;
-                    }
-                    return {
-                        u: link,
-                        t: String(item.t),
-                        cat: normalizeCategory(item.cat),
-                        img: sanitizeUrl(item.img) || 'logo.png',
-                    };
-                })
-                .filter(Boolean);
-
-            lastDropCount = droppedInvalidUrl + droppedMissingFields;
-            lastDropMessage = '';
-            lastDropShown = false;
-
-            if (lastDropCount) {
-                const parts = [];
-                if (droppedInvalidUrl) parts.push(`${droppedInvalidUrl} por URL inválida`);
-                if (droppedMissingFields) parts.push(`${droppedMissingFields} por datos incompletos`);
-                lastDropMessage = `⚠️ ${parts.join(' y ')}.`;
-            }
-            return items;
-        }
-
-        function escapeHtml(value) {
-            return String(value)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
-
-        // MODAL
-        function openInfoModal(item) {
-            if (!item) return;
-            document.getElementById('modalTitle').textContent = item.t || '';
-            document.getElementById('modalCat').textContent = item.cat || '';
-            const imgEl = document.getElementById('modalImg');
-            imgEl.src = item.img || 'logo.png';
-
-            const modal = document.getElementById('infoModal');
-            modal.style.display = 'block';
-            modal.setAttribute('aria-hidden', 'false');
-            tg?.HapticFeedback?.impactOccurred?.('light');
-        }
-
-        function closeInfoModal() {
-            const modal = document.getElementById('infoModal');
-            modal.style.display = 'none';
-            modal.setAttribute('aria-hidden', 'true');
-        }
-
-        async function copyModalText() {
-            const title = document.getElementById('modalTitle').textContent || '';
-            const cat = document.getElementById('modalCat').textContent || '';
-            const text = `${cat}\n${title}`.trim();
-            try {
-                await navigator.clipboard.writeText(text);
-                showStatus('✅ Copiado al portapapeles', 1, true);
-            } catch (e) {
-                try {
-                    const ta = document.createElement('textarea');
-                    ta.value = text;
-                    document.body.appendChild(ta);
-                    ta.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(ta);
-                    showStatus('✅ Copiado al portapapeles', 1, true);
-                } catch {
-                    showStatus('⚠️ No se pudo copiar', 2, true);
-                }
-            }
-        }
-
-        // ✅ Mantengo tu botón VER y tu render, pero ahora VER abre modal
-        function safeOpenLink(url) {
-            const safeUrl = sanitizeLinkUrl(url);
-            if (!safeUrl) {
-                showStatus('⚠️ Enlace inválido. Actualiza la lista e intenta de nuevo.', 1);
-                return;
-            }
-            const item = itemsByUrl.get(safeUrl);
-            if (!item) {
-                showStatus('⚠️ No se encontró información del elemento. Actualiza la lista.', 2, true);
-                return;
-            }
-            openInfoModal(item);
-        }
-
-        function safeGetFavs() {
-            try {
-                const parsed = JSON.parse(localStorage.getItem('bcntv_favs') || '[]');
-                return Array.isArray(parsed) ? parsed : [];
-            } catch (e) {
-                return [];
-            }
-        }
-
-        function safeSetFavs(favs) {
-            try {
-                localStorage.setItem('bcntv_favs', JSON.stringify(favs));
-            } catch (e) {}
-        }
-
-        async function init() {
-            if (initInProgress) return;
-            initInProgress = true;
-
-            lastDropCount = 0;
-            lastDropMessage = '';
-            lastDropShown = false;
-
-            let timeoutId = null;
-            try {
-                const controller = new AbortController();
-                timeoutId = setTimeout(() => controller.abort(), fetchTimeoutMs);
-
-                const res = await fetch(`${API_URL}/api/links`, { signal: controller.signal });
-                if (!res.ok) {
-                    throw new Error(`Error ${res.status}`);
-                }
-
-                const data = await res.json();
-                const normalized = normalizeItems(data);
-                if (normalized === null) {
-                    throw new Error('Respuesta inválida del servidor.');
-                }
-
-                allItems = normalized;
-
-                // mapa para modal
-                itemsByUrl.clear();
-                for (const it of allItems) itemsByUrl.set(it.u, it);
-
-                buildFilters();
-                render();
-
-                const loader = document.getElementById('loader');
-                loader.textContent = loaderDefaultText;
-                loader.style.display = 'none';
-
-                retryCount = 0;
-                clearStatus();
-            } catch (e) {
-                retryCount += 1;
-                if (retryCount > maxRetries) {
-                    showError('❌ No se pudo conectar. Verifica tu conexión y reintenta.');
-                    return;
-                }
-                if (e.name === 'AbortError') {
-                    showError(`⏱️ Tiempo de espera agotado. Reintentando (${retryCount}/${maxRetries})...`);
-                } else if (e.message === 'Respuesta inválida del servidor.') {
-                    showError(`⚠️ Respuesta inválida. Reintentando (${retryCount}/${maxRetries})...`);
-                } else {
-                    showError(`❌ Error al conectar. Reintentando (${retryCount}/${maxRetries})...`);
-                }
-                const delay = baseRetryDelay * retryCount;
-                setTimeout(init, delay);
-            } finally {
-                if (timeoutId) clearTimeout(timeoutId);
-                initInProgress = false;
-            }
-        }
-
-        function buildFilters() {
-            const filterBar = document.getElementById('filter-bar');
-            const categories = Array.from(new Set(allItems.map(item => item.cat))).sort((a, b) => a.localeCompare(b));
-            const pills = [
-                { label: '🚀 TODO', value: 'TODOS' },
-                { label: '⭐ FAVS', value: '⭐ FAVORITOS' },
-                ...categories.map(cat => ({ label: cat, value: cat })),
-            ];
-            filterBar.innerHTML = pills.map(pill => `
-                <div class="pill ${pill.value === currentFilter ? 'active' : ''}" onclick="filterData(${JSON.stringify(pill.value)}, this)">${escapeHtml(pill.label)}</div>
-            `).join('');
-            if (!pills.some(pill => normalizeCategoryKey(pill.value) === normalizeCategoryKey(currentFilter))) {
-                currentFilter = 'TODOS';
-                filterBar.querySelector('.pill')?.classList.add('active');
-            }
-        }
-
-        function render() {
-            const container = document.getElementById('container');
-            const favs = safeGetFavs();
-            let filtered = allItems;
-
-            if (currentFilter === '⭐ FAVORITOS') filtered = filtered.filter(i => favs.includes(i.u));
-            else if (currentFilter !== 'TODOS') filtered = filtered.filter(i => normalizeCategoryKey(i.cat) === normalizeCategoryKey(currentFilter));
-
-            if (currentSearch) {
-                const normalizedSearch = normalizeSearch(currentSearch);
-                filtered = filtered.filter(i => normalizeSearch(i.t).includes(normalizedSearch));
-            }
-
-            if (lastDropMessage && !lastDropShown) {
-                showStatus(lastDropMessage, 2, true);
-                lastDropShown = true;
-            }
-
-            if (filtered.length === 0) {
-                const emptyNote = lastDropMessage ? `<div class="cat-tag">${escapeHtml(lastDropMessage)}</div>` : '';
-                container.innerHTML = `
-                <div class="card">
-                    <div class="info">
-                        <div class="title">No hay resultados para mostrar.</div>
-                        ${emptyNote}
-                    </div>
-                </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = filtered.map(i => {
-                const safeUrl = JSON.stringify(i.u);
-                const safeCat = escapeHtml(i.cat);
-                const safeTitle = escapeHtml(i.t);
-                const safeImg = escapeHtml(i.img);
-                return `
-                <div class="card">
-                    <div class="logo-container"><img src="${safeImg}" class="logo-img" loading="lazy" onerror="this.src='logo.png'"></div>
-                    <div class="info">
-                        <div class="cat-tag">${safeCat}</div>
-                        <div class="title">${safeTitle}</div>
-                    </div>
-                    <div class="actions">
-                        <button class="btn-fav ${favs.includes(i.u) ? 'active' : ''}" onclick="toggleFav(${safeUrl})">★</button>
-                        <button class="btn-play" onclick="safeOpenLink(${safeUrl})">VER</button>
-                    </div>
-                </div>
-                `;
-            }).join('');
-        }
-
-        function normalizeSearch(value) {
-            return String(value)
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '')
-                .toLowerCase();
-        }
-
-        function normalizeCategoryKey(value) {
-            return normalizeSearch(value).replace(/\s+/g, ' ').trim();
-        }
-
-        function toggleFav(url) {
-            let favs = safeGetFavs();
-            if (favs.includes(url)) favs = favs.filter(f => f !== url);
-            else favs.push(url);
-            safeSetFavs(favs);
-            tg?.HapticFeedback?.impactOccurred?.('light');
-            render();
-        }
-
-        function filterData(cat, el) {
-            document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-            if (el) el.classList.add('active');
-            currentFilter = cat;
-            render();
-        }
-
-        document.getElementById('search').addEventListener('input', (e) => {
-            currentSearch = e.target.value;
-            render();
+      if (primary === "SPORT") {
+        const groups = {};
+        filtered.forEach(it => {
+          const meta = it.meta || {};
+          const comp = meta.competition || "Deportes";
+          const j = meta.jornada ? `Jornada ${meta.jornada}` : "";
+          const header = [comp, j].filter(Boolean).join(" • ");
+          (groups[header] ||= []).push(it);
         });
 
-        document.getElementById('status-close').addEventListener('click', () => clearStatus());
-
-        // Modal events
-        document.getElementById('modalCloseBtn').addEventListener('click', closeInfoModal);
-        document.getElementById('modalOkBtn').addEventListener('click', closeInfoModal);
-        document.getElementById('modalCopyBtn').addEventListener('click', copyModalText);
-        document.getElementById('infoModal').addEventListener('click', (e) => {
-            if (e.target && e.target.id === 'infoModal') closeInfoModal();
+        Object.keys(groups).slice(0, 20).forEach(h => {
+          html += renderSectionHeader(`🏆 ${h}`);
+          html += `<div class="hint">Toca una tarjeta para ver detalles.</div>`;
+          groups[h].slice(0, 60).forEach(it => { html += renderItemCard(it); });
         });
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeInfoModal();
+      } else if (primary === "MOVIE" || primary === "SERIES") {
+        const groups = {};
+        filtered.forEach(it => {
+          const sec = it?.meta?.section || "Novedades";
+          (groups[sec] ||= []).push(it);
         });
 
-        tg?.ready?.();
-        tg?.expand?.();
-        init();
-    </script>
+        Object.keys(groups).slice(0, 25).forEach(h => {
+          html += renderSectionHeader(`📌 ${h.toUpperCase()}`);
+          groups[h].slice(0, 80).forEach(it => { html += renderItemCard(it); });
+        });
+
+      } else {
+        // ALL o FAVS: por tipo
+        const byType = { sport: [], movie: [], series: [] };
+        filtered.forEach(it => {
+          const t = it?.meta?.type || "";
+          if (byType[t]) byType[t].push(it);
+        });
+
+        if (byType.sport.length) {
+          html += renderSectionHeader("⚽ DEPORTES");
+          byType.sport.slice(0, 40).forEach(it => { html += renderItemCard(it); });
+        }
+        if (byType.movie.length) {
+          html += renderSectionHeader("🎬 PELÍCULAS");
+          byType.movie.slice(0, 40).forEach(it => { html += renderItemCard(it); });
+        }
+        if (byType.series.length) {
+          html += renderSectionHeader("📺 SERIES");
+          byType.series.slice(0, 40).forEach(it => { html += renderItemCard(it); });
+        }
+      }
+
+      container.innerHTML = html;
+    }
+
+    async function checkVip() {
+      try {
+        const uid = tg?.initDataUnsafe?.user?.id;
+        if (!uid) return;
+        const res = await fetch(`${API_URL}/api/is_vip?uid=${encodeURIComponent(uid)}`);
+        const data = await res.json();
+        const lock = document.getElementById("vip-lock");
+        if (data?.ok && data?.vip === false) {
+          lock.style.display = "block";
+        } else {
+          lock.style.display = "none";
+        }
+      } catch {}
+    }
+
+    async function init() {
+      if (initInProgress) return;
+      initInProgress = true;
+
+      let timeoutId = null;
+      try {
+        const controller = new AbortController();
+        timeoutId = setTimeout(() => controller.abort(), fetchTimeoutMs);
+
+        const res = await fetch(`${API_URL}/api/links`, { signal: controller.signal });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        if (!Array.isArray(data)) throw new Error("Respuesta inválida");
+        // normaliza imgs y estructura mínima
+        allItems = data.map(it => ({
+          _id: it._id,
+          t: String(it.t || ""),
+          u: String(it.u || ""),
+          cat: String(it.cat || ""),
+          img: sanitizeUrl(it.img) || "logo.png",
+          meta: it.meta || {}
+        }));
+
+        lastFetchAt = Date.now();
+        retryCount = 0;
+
+        buildPrimaryFilters();
+        computeSubfilters();
+        render();
+        clearStatus();
+
+        document.getElementById("loader").style.display = "none";
+      } catch (e) {
+        retryCount += 1;
+        if (retryCount > maxRetries) {
+          showError("❌ No se pudo conectar. Verifica tu conexión y reintenta.");
+          return;
+        }
+        showError(`❌ Error al conectar. Reintentando (${retryCount}/${maxRetries})...`);
+        setTimeout(init, baseRetryDelay * retryCount);
+      } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+        initInProgress = false;
+      }
+    }
+
+    // Auto-refresh cada 15 minutos (manual 1)
+    setInterval(() => {
+      if (!lastFetchAt) return;
+      const mins = (Date.now() - lastFetchAt) / 60000;
+      if (mins >= 15) init();
+    }, 60000);
+
+    // Handlers UI
+    document.getElementById("search").addEventListener("input", (e) => {
+      currentSearch = e.target.value;
+      render();
+    });
+    document.getElementById("status-close").addEventListener("click", clearStatus);
+
+    document.getElementById("modal-close").addEventListener("click", closeModal);
+    document.getElementById("modal-backdrop").addEventListener("click", (e) => {
+      if (e.target.id === "modal-backdrop") closeModal();
+    });
+    document.getElementById("modal-copy").addEventListener("click", copyModal);
+
+    // expone método para abrir item
+    window.__openItem = (key) => {
+      const it = allItems.find(x => (x._id || x.u || x.t) === key);
+      if (it) openModal(it);
+    };
+
+    tg?.ready?.();
+    tg?.expand?.();
+
+    buildPrimaryFilters();
+    computeSubfilters();
+    init();
+    checkVip();
+  </script>
 </body>
 </html>
