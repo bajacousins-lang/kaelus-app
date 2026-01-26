@@ -43,7 +43,8 @@
     .section h2 .sub{color:var(--muted);font-weight:600}
     .card{
       grid-column:span 12;background:var(--card);border:1px solid var(--line);border-radius:18px;
-      overflow:hidden;display:flex;gap:12px;padding:12px
+      overflow:hidden;display:flex;gap:12px;padding:12px;
+      position:relative; /* (añadido) para overlay lock */
     }
     @media(min-width:720px){ .card{grid-column:span 6} }
     @media(min-width:980px){ .card{grid-column:span 4} }
@@ -62,6 +63,18 @@
     .hint{color:var(--muted);font-size:12px;margin-top:6px}
     .badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.03);font-size:12px}
     .badge.good b{color:var(--good)}
+
+    /* (añadido) overlay cuando el contenido es VIP y no tienes VIP */
+    .lock{
+      position:absolute;inset:0;background:rgba(0,0,0,.65);
+      display:flex;align-items:center;justify-content:center;text-align:center;padding:14px;
+    }
+    .lock .box{
+      max-width:260px;border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.35);border-radius:14px;padding:12px;
+    }
+    .lock .box h4{margin:0 0 6px 0;font-size:14px}
+    .lock .box p{margin:0;color:#e8e8f2;font-size:12px;line-height:1.35}
   </style>
 </head>
 <body>
@@ -75,7 +88,12 @@
           <div class="vip" id="vipLine">Estado: <b>VIP</b></div>
         </div>
       </div>
-      <div class="badge good" id="statusBadge">● <span id="statusText">Conectando…</span></div>
+
+      <!-- (corregido/añadido) mantenemos tu badge y añadimos botón config sin borrar -->
+      <div class="row">
+        <div class="badge good" id="statusBadge">● <span id="statusText">Conectando…</span></div>
+        <button class="tab" id="btnConfig" type="button" title="Configurar API/VIP">⚙️ Config</button>
+      </div>
     </div>
 
     <div class="bar">
@@ -98,6 +116,15 @@
         <option value="GRAND">Tenis/Grand Slams</option>
         <option value="GOLF">Golf</option>
       </select>
+
+      <!-- (añadido) filtro VIP como en la versión mejorada (sin borrar nada) -->
+      <select id="vipFilter">
+        <option value="show_locked">VIP: mostrar (bloqueados si no tienes)</option>
+        <option value="show">VIP: mostrar solo si tienes</option>
+        <option value="hide">VIP: ocultar</option>
+        <option value="only">VIP: solo VIP (si tienes)</option>
+      </select>
+
       <div class="small">Auto-refresh cada 15 min • Favoritos guardados en tu dispositivo</div>
     </div>
   </div>
@@ -115,17 +142,45 @@
 <script>
   // ===== Config =====
   const params = new URLSearchParams(location.search);
-  const VIP = (params.get("vip") === "1" || params.get("vip") === "true");
-  const DEFAULT_API_BASE = "https://kaelus-bot.onrender.com";
-  const API_BASE = (params.get("api") || DEFAULT_API_BASE).replace(/\/$/,"");
-  const API_URL = API_BASE + "/api/links";
 
-  document.getElementById("vipLine").innerHTML = "Estado: " + (VIP ? "<b>VIP</b>" : "<span style='color:#ff6b6b;font-weight:800'>No VIP</span>");
-  document.getElementById("apiHint").textContent = "API: " + API_URL;
+  // (corregido) VIP persistente en localStorage + soporte ?vip=1 / ?vip=0
+  let VIP = (function(){
+    const v = (params.get("vip") || "").toLowerCase();
+    if(v === "1" || v === "true") localStorage.setItem("BCNTV_VIP", "1");
+    if(v === "0" || v === "false") localStorage.removeItem("BCNTV_VIP");
+    return localStorage.getItem("BCNTV_VIP") === "1";
+  })();
+
+  const DEFAULT_API_BASE = "https://kaelus-bot.onrender.com";
+
+  // (corregido) API base persistente + soporte ?api=...
+  let API_BASE = (function(){
+    const p = (params.get("api") || "").trim();
+    if(p) localStorage.setItem("BCNTV_API_BASE", p);
+    return (localStorage.getItem("BCNTV_API_BASE") || DEFAULT_API_BASE).replace(/\/$/,"");
+  })();
+
+  // (añadido) soporte API key (x-api-key) + ?key=...
+  let API_KEY = (function(){
+    const k = (params.get("key") || "").trim();
+    if(k) localStorage.setItem("BCNTV_API_KEY", k);
+    return (localStorage.getItem("BCNTV_API_KEY") || "").trim();
+  })();
+
+  let API_URL = API_BASE + "/api/links";
+
+  // (corregido) reflejar VIP/API en UI (sin borrar tus líneas, solo las hacemos dinámicas)
+  function applyUiConfig(){
+    document.getElementById("vipLine").innerHTML = "Estado: " + (VIP ? "<b>VIP</b>" : "<span style='color:#ff6b6b;font-weight:800'>No VIP</span>");
+    const keyInfo = API_KEY ? " (key: sí)" : " (key: no)";
+    document.getElementById("apiHint").textContent = "API: " + API_URL + keyInfo;
+  }
+  applyUiConfig();
 
   const grid = document.getElementById("grid");
   const q = document.getElementById("q");
   const sportsSub = document.getElementById("sportsSub");
+  const vipFilter = document.getElementById("vipFilter");
   const tabs = [...document.querySelectorAll(".tab")];
 
   let TAB = "all";
@@ -146,6 +201,35 @@
 
   q.addEventListener("input", ()=> render());
   sportsSub.addEventListener("change", ()=> render());
+  vipFilter.addEventListener("change", ()=> render());
+
+  // (añadido) botón Config para cambiar API/VIP/KEY sin tocar tu estructura
+  document.getElementById("btnConfig").addEventListener("click", ()=>{
+    try{ vibrate(12); }catch(e){}
+
+    const api = prompt("API Base URL (ej: https://kaelus-bot.onrender.com)", API_BASE);
+    if(api !== null){
+      const v = (api || "").trim();
+      if(v) localStorage.setItem("BCNTV_API_BASE", v);
+      API_BASE = (localStorage.getItem("BCNTV_API_BASE") || DEFAULT_API_BASE).replace(/\/$/,"");
+      API_URL = API_BASE + "/api/links";
+    }
+
+    const key = prompt("API Key (x-api-key). Deja vacío si no usas:", API_KEY);
+    if(key !== null){
+      const k = (key || "").trim();
+      if(k) localStorage.setItem("BCNTV_API_KEY", k);
+      else localStorage.removeItem("BCNTV_API_KEY");
+      API_KEY = (localStorage.getItem("BCNTV_API_KEY") || "").trim();
+    }
+
+    const vip = confirm("¿Activar VIP en este dispositivo?\nOK = VIP\nCancelar = No VIP");
+    if(vip) localStorage.setItem("BCNTV_VIP","1"); else localStorage.removeItem("BCNTV_VIP");
+    VIP = localStorage.getItem("BCNTV_VIP")==="1";
+
+    applyUiConfig();
+    fetchData();
+  });
 
   function loadFavs(){
     try{
@@ -174,14 +258,37 @@
   async function fetchData(){
     try{
       setStatus(true, "Cargando…");
-      const r = await fetch(API_URL, {cache:"no-store"});
+
+      // (añadido) headers con x-api-key si existe
+      const headers = {};
+      if(API_KEY) headers["x-api-key"] = API_KEY;
+
+      const r = await fetch(API_URL, {cache:"no-store", headers});
       if(!r.ok) throw new Error("HTTP " + r.status);
       const j = await r.json();
       DATA = Array.isArray(j) ? j : [];
+
+      // (añadido) caché local para modo offline
+      try{
+        localStorage.setItem("BCNTV_CACHE_ITEMS", JSON.stringify(DATA));
+      }catch(e){}
+
       setStatus(true, "Online (" + DATA.length + ")");
       render();
     }catch(e){
       console.error(e);
+
+      // (añadido) fallback a caché si existe
+      const cached = localStorage.getItem("BCNTV_CACHE_ITEMS");
+      if(cached){
+        try{
+          DATA = JSON.parse(cached) || [];
+          setStatus(false, "Offline (caché " + DATA.length + ")");
+          render();
+          return;
+        }catch(_){}
+      }
+
       setStatus(false, "Offline");
       render();
     }
@@ -194,9 +301,35 @@
     return (t+" "+cat+" "+(m.canal||"")+" "+(m.sede||"")+" "+(m.competition||"")+" "+(m.jornada||"")+" "+(m.section||"")+" "+(m.date_label||"")).toLowerCase();
   }
 
+  // (añadido) regla VIP, similar a la versión mejorada
+  function allowByVip(it){
+    const m = it.meta || {};
+    const isVipItem = !!m.is_vip;
+    const mode = vipFilter.value;
+
+    if(mode === "show_locked"){
+      // muestra todo; si es vip y no tienes, se verá bloqueado en la card()
+      return true;
+    }
+    if(mode === "show"){
+      if(!isVipItem) return true;
+      return VIP;
+    }
+    if(mode === "hide"){
+      return !isVipItem;
+    }
+    if(mode === "only"){
+      return isVipItem && VIP;
+    }
+    return true;
+  }
+
   function filterItems(){
     const term = (q.value||"").trim().toLowerCase();
     let arr = DATA.slice();
+
+    // (añadido) VIP gate/filtro
+    arr = arr.filter(allowByVip);
 
     // Tab filter
     if(TAB === "sports"){
@@ -273,6 +406,10 @@
 
     const favOn = isFav(it._id);
 
+    // (añadido) overlay lock si es VIP y no tienes VIP (solo se verá cuando vipFilter=show_locked)
+    const isVipItem = !!m.is_vip;
+    const locked = isVipItem && !VIP && (vipFilter.value === "show_locked");
+
     return `
       <div class="card">
         <img class="poster" loading="lazy" src="${it.img || "./logo.png"}" alt="img"
@@ -292,6 +429,15 @@
         <div class="actions">
           <button class="star ${favOn?"on":""}" data-fav="${it._id}">${favOn?"★":"☆"}</button>
         </div>
+
+        ${locked ? `
+          <div class="lock">
+            <div class="box">
+              <h4>🔒 Contenido VIP</h4>
+              <p>Accede desde Telegram con permiso VIP (o activa VIP en ⚙️ Config).</p>
+            </div>
+          </div>
+        ` : ``}
       </div>
     `;
   }
