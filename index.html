@@ -1,58 +1,64 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>BCNTV Premium</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    :root { --accent:#00ff88; --bg:#000; --card:#121212; --muted:#9aa0a6; }
-    body { background:var(--bg); color:#fff; font-family:-apple-system, sans-serif; padding:15px; margin:0; }
-    .search-box { width:100%; padding:12px; border-radius:10px; border:1px solid #333; background:#1a1a1a; color:#fff; margin-bottom:12px; box-sizing:border-box; outline:none; }
-    .filter-bar { display:flex; gap:8px; overflow-x:auto; padding-bottom:10px; scrollbar-width:none; position:sticky; top:0; background:var(--bg); z-index:10; }
-    .subfilter-bar { display:flex; gap:8px; overflow-x:auto; padding-bottom:12px; scrollbar-width:none; }
-    .pill { background:#222; border:1px solid #333; color:#888; padding:8px 16px; border-radius:20px; white-space:nowrap; font-size:12px; font-weight:800; cursor:pointer; transition:.2s; user-select:none; }
-    .pill.active { background:var(--accent); color:#000; border-color:var(--accent); }
-    .section-title { margin:14px 0 8px; font-weight:900; color:#e6e6e6; letter-spacing:.2px; }
-    .hint { font-size:12px; color:var(--muted); margin-top:-4px; margin-bottom:10px; }
-    .card { background:var(--card); border-radius:12px; padding:12px; border:1px solid #222; margin-bottom:10px; display:flex; align-items:center; gap:12px; cursor:pointer; }
-    .card:active { transform: scale(.995); }
-    .logo-container { width:55px; height:75px; flex-shrink:0; border-radius:8px; border:1px solid #333; overflow:hidden; background:#0b0b0b; }
-    .logo-img { width:100%; height:100%; object-fit:cover; }
-    .info { flex-grow:1; min-width:0; }
-    .cat-tag { font-size:10px; color:var(--accent); font-weight:900; text-transform:uppercase; }
-    .title { font-weight:900; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#eee; }
-    .meta { font-size:12px; color:var(--muted); margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .actions { display:flex; align-items:center; gap:8px; }
-    .btn-fav { background:none; border:none; font-size:22px; cursor:pointer; color:#444; padding:4px; }
-    .btn-fav.active { color:#ffeb3b; }
-    #loader { text-align:center; margin-top:35vh; color:var(--accent); font-weight:900; }
-    #status { margin:10px 0 12px; color:#ffc107; font-size:12px; display:none; align-items:center; gap:8px; }
-    #status[data-level="2"] { color:#ff9800; }
-    #status[data-level="3"] { color:#ff5252; }
-    #status-message { flex:1; }
-    #status-close { background:none; border:none; color:#ffc107; font-size:14px; cursor:pointer; }
+    :root { --accent: #00ff88; --bg: #000; --card: #121212; --muted:#9aa0a6; }
+    body { background: var(--bg); color: #fff; font-family: -apple-system, system-ui, sans-serif; padding: 15px; margin: 0; }
+    .search-box { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #333; background: #1a1a1a; color: #fff; margin-bottom: 12px; box-sizing: border-box; outline: none; }
+    .filter-bar { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; scrollbar-width: none; position: sticky; top: 0; background: var(--bg); z-index: 10; }
+    .pill { background: #222; border: 1px solid #333; color: #bbb; padding: 8px 14px; border-radius: 20px; white-space: nowrap; font-size: 12px; font-weight: 800; cursor: pointer; transition: .2s; user-select:none; }
+    .pill.active { background: var(--accent); color: #000; border-color: var(--accent); }
+    .card { background: var(--card); border-radius: 12px; padding: 12px; border: 1px solid #222; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
+    .logo-container { width: 55px; height: 75px; flex-shrink: 0; border-radius: 8px; border: 1px solid #333; overflow: hidden; background:#0b0b0b; }
+    .logo-img { width: 100%; height: 100%; object-fit: cover; }
+    .info { flex-grow: 1; min-width: 0; }
+    .cat-tag { font-size: 9px; color: var(--accent); font-weight: 900; text-transform: uppercase; letter-spacing:.4px; }
+    .title { font-weight: 800; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #eee; margin-top:2px; }
+    .subtitle { font-size: 11px; color: var(--muted); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .actions { display: flex; align-items: center; gap: 10px; }
+    .btn-play { background: var(--accent); color: #000; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 900; cursor: pointer; }
+    .btn-fav { background: none; border: none; font-size: 20px; cursor: pointer; color: #444; padding:0 4px; }
+    .btn-fav.active { color: #ffeb3b; }
+    #loader { text-align: center; margin-top: 32vh; color: var(--accent); font-weight: 900; }
+    #status { margin: 10px 0 12px; color: #ffc107; font-size: 12px; display: none; align-items: center; gap: 8px; }
+    #status[data-level="2"] { color: #ff9800; }
+    #status[data-level="3"] { color: #ff5252; }
+    #status-message { flex: 1; }
+    #status-close { background: none; border: none; color: inherit; font-size: 14px; cursor: pointer; }
+
+    /* VIP overlay */
+    #vip-lock { position: fixed; inset: 0; background: rgba(0,0,0,.92); display:none; align-items:center; justify-content:center; z-index: 999; padding: 22px; }
+    .vip-card { width:100%; max-width:420px; background:#0f0f0f; border:1px solid #222; border-radius:16px; padding:18px; text-align:center; }
+    .vip-card h2 { margin:0 0 10px; font-size:18px; }
+    .vip-card p { margin:0 0 14px; color:#c7c7c7; font-size:13px; line-height:1.4; }
+    .vip-card button { width:100%; padding:12px; border-radius:10px; border:0; background:var(--accent); color:#000; font-weight:900; cursor:pointer; }
 
     /* Modal */
-    #modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.65); display:none; align-items:center; justify-content:center; z-index:999; padding:16px; }
-    #modal { width:min(520px, 100%); background:#0f0f0f; border:1px solid #2a2a2a; border-radius:14px; padding:14px; box-shadow:0 20px 60px rgba(0,0,0,.45); }
-    #modal h3 { margin:0 0 6px; font-size:16px; }
-    #modal .modal-cat { color:var(--accent); font-weight:900; font-size:12px; text-transform:uppercase; margin-bottom:10px; }
-    #modal .modal-body { font-size:13px; color:#ddd; line-height:1.4; }
-    #modal .kv { margin:6px 0; color:#cfcfcf; }
-    #modal .kv b { color:#fff; }
-    #modal .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:12px; }
-    .btn { border:none; border-radius:10px; padding:10px 12px; font-weight:900; cursor:pointer; }
-    .btn.primary { background:var(--accent); color:#000; }
-    .btn.ghost { background:#1a1a1a; color:#fff; border:1px solid #333; }
-    .vip-lock { background:#111; border:1px solid #333; border-radius:12px; padding:14px; margin:12px 0; }
-    .vip-lock b { color:var(--accent); }
+    #modal { position: fixed; inset: 0; background: rgba(0,0,0,.75); display:none; align-items:flex-end; justify-content:center; z-index: 1000; }
+    .modal-sheet { width:100%; max-width:560px; background:#0f0f0f; border:1px solid #222; border-radius:18px 18px 0 0; padding:14px; }
+    .modal-head { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .modal-title { font-weight:900; font-size:14px; margin:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .modal-close { background:none; border:0; color:#fff; font-size:18px; cursor:pointer; }
+    .modal-meta { margin-top:10px; font-size:12px; color:#d8d8d8; line-height:1.5; }
+    .kv { color:#9aa0a6; }
+    .divider { height:1px; background:#222; margin:10px 0; }
   </style>
 </head>
 <body>
-  <input type="text" id="search" class="search-box" placeholder="🔍 Buscar en BCNTV..." />
+  <div id="vip-lock">
+    <div class="vip-card">
+      <h2>🔒 Zona VIP</h2>
+      <p>Tu cuenta aún no tiene acceso. Puedes solicitarlo aquí mismo y el administrador te aprueba con un botón.</p>
+      <button id="btn-request-vip">Solicitar acceso</button>
+    </div>
+  </div>
+
+  <input type="text" id="search" class="search-box" placeholder="🔍 Buscar en BCNTV...">
   <div class="filter-bar" id="filter-bar"></div>
-  <div class="subfilter-bar" id="subfilter-bar" style="display:none;"></div>
 
   <div id="status">
     <span id="status-message"></span>
@@ -60,479 +66,424 @@
   </div>
 
   <div id="loader">🛰️ Conectando con Servidor...</div>
-  <div id="vip-lock" class="vip-lock" style="display:none;">
-    🔒 <b>Zona VIP</b>. Si no ves contenido, solicita acceso desde el bot.
-  </div>
-
   <div id="container"></div>
 
-  <!-- Modal -->
-  <div id="modal-backdrop" role="dialog" aria-modal="true">
-    <div id="modal">
-      <h3 id="modal-title"></h3>
-      <div class="modal-cat" id="modal-cat"></div>
-      <div class="modal-body" id="modal-body"></div>
-      <div class="modal-actions">
-        <button class="btn ghost" id="modal-copy">Copiar</button>
-        <button class="btn primary" id="modal-close">Cerrar</button>
+  <!-- Modal INFO -->
+  <div id="modal">
+    <div class="modal-sheet">
+      <div class="modal-head">
+        <div style="min-width:0;">
+          <div class="cat-tag" id="m-cat"></div>
+          <div class="modal-title" id="m-title"></div>
+        </div>
+        <button class="modal-close" id="m-close">✕</button>
       </div>
+      <div class="divider"></div>
+      <div class="modal-meta" id="m-meta"></div>
     </div>
   </div>
 
-  <script>
-    const tg = window.Telegram?.WebApp;
-    const API_URL = window.API_URL || "https://kaelus-bot.onrender.com";
+<script>
+  const tg = window.Telegram?.WebApp;
+  const API_URL = window.API_URL || "https://kaelus-bot.onrender.com";
 
-    // (Opcional) link a tu bot si quieres un botón “solicitar” más directo:
-    // const BOT_LINK = "https://t.me/TU_BOT_USERNAME";
-    const BOT_LINK = "";
+  let allItems = [];
+  let currentFilter = 'TODOS';
+  let currentSearch = '';
+  let retryCount = 0;
+  const maxRetries = 5;
+  const baseRetryDelay = 2000;
+  const fetchTimeoutMs = 12000;
+  let initInProgress = false;
 
-    const PRIMARY_FILTERS = [
-      { key: "ALL", label: "🚀 TODO" },
-      { key: "FAVS", label: "⭐ FAVS" },
-      { key: "SPORT", label: "⚽ DEPORTES" },
-      { key: "MOVIE", label: "🎬 PELÍCULAS" },
-      { key: "SERIES", label: "📺 SERIES" },
-    ];
+  let currentStatusMessage = '';
+  let currentStatusLevel = 0;
+  const loaderDefaultText = '🛰️ Conectando con Servidor...';
 
-    let allItems = [];
-    let primary = "ALL";
-    let subfilter = "ALL";
-    let currentSearch = "";
-    let retryCount = 0;
-    const maxRetries = 5;
-    const baseRetryDelay = 2000;
-    const fetchTimeoutMs = 12000;
-    let initInProgress = false;
-    let lastFetchAt = 0;
+  const FAVORITES_KEY = "bcntv_favs_v2"; // por _id
+  const FAVORITES_OLD_KEY = "bcntv_favs"; // compat
 
-    function showError(message) {
-      const loader = document.getElementById("loader");
-      loader.textContent = message;
-      loader.style.display = "block";
-      if (!allItems.length) document.getElementById("container").innerHTML = "";
-      clearStatus();
-    }
+  const FIXED_PILLS = [
+    { label: '🚀 TODO', value: 'TODOS' },
+    { label: '⭐ FAVS', value: '⭐ FAVORITOS' },
+    { label: '⚽ DEPORTES', value: '⚽ DEPORTES' },
+    { label: '🎬 PELÍCULAS', value: '🎬 PELÍCULAS' },
+    { label: '📺 SERIES', value: '📺 SERIES' },
+  ];
 
-    function showStatus(message, level = 1) {
-      const status = document.getElementById("status");
-      const messageEl = document.getElementById("status-message");
-      if (!message) return clearStatus();
-      messageEl.textContent = message;
-      status.style.display = "flex";
-      status.dataset.level = String(level);
-    }
+  function showError(message) {
+    const loader = document.getElementById('loader');
+    loader.textContent = message;
+    loader.style.display = 'block';
+    if (!allItems.length) document.getElementById('container').innerHTML = '';
+    clearStatus();
+  }
 
-    function clearStatus() {
-      const status = document.getElementById("status");
-      const messageEl = document.getElementById("status-message");
-      messageEl.textContent = "";
-      status.style.display = "none";
-      delete status.dataset.level;
-    }
+  function showStatus(message, level = 1, force = false) {
+    const status = document.getElementById('status');
+    const messageEl = document.getElementById('status-message');
+    if (!message) { clearStatus(); return; }
+    if (!force && currentStatusMessage && level < currentStatusLevel) return;
+    messageEl.textContent = message;
+    status.style.display = 'flex';
+    status.dataset.level = String(level);
+    currentStatusMessage = message;
+    currentStatusLevel = level;
+  }
 
-    function sanitizeUrl(url) {
-      if (!url) return null;
-      try {
-        const parsed = new URL(String(url), window.location.href);
-        if (parsed.protocol === "http:" || parsed.protocol === "https:") return parsed.href;
-      } catch (e) { return null; }
-      return null;
-    }
+  function clearStatus() {
+    const status = document.getElementById('status');
+    const messageEl = document.getElementById('status-message');
+    messageEl.textContent = '';
+    status.style.display = 'none';
+    delete status.dataset.level;
+    currentStatusMessage = '';
+    currentStatusLevel = 0;
+  }
 
-    function escapeHtml(value) {
-      return String(value)
-        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-    }
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
 
-    function itemKey(it) {
-      return it?._id || it?.u || it?.t || "";
-    }
+  function sanitizeUrl(url) {
+    if (!url) return null;
+    try {
+      const parsed = new URL(String(url), window.location.href);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') return parsed.href;
+    } catch (e) { return null; }
+    return null;
+  }
 
-    function safeGetFavs() {
-      try {
-        const parsed = JSON.parse(localStorage.getItem("bcntv_favs") || "[]");
-        return Array.isArray(parsed) ? parsed : [];
-      } catch { return []; }
-    }
+  function normalizeCategory(cat) {
+    if (!cat) return 'SIN CATEGORÍA';
+    return String(cat).trim();
+  }
 
-    function safeSetFavs(favs) {
-      try { localStorage.setItem("bcntv_favs", JSON.stringify(favs)); } catch {}
-    }
+  function safeGetFavs() {
+    // nuevo por _id
+    try {
+      const parsed = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+      if (Array.isArray(parsed)) return parsed;
+    } catch (e) {}
+    return [];
+  }
 
-    function toggleFav(key) {
-      let favs = safeGetFavs();
-      if (favs.includes(key)) favs = favs.filter(f => f !== key);
-      else favs.push(key);
-      safeSetFavs(favs);
-      tg?.HapticFeedback?.impactOccurred?.("light");
-      render();
-    }
+  function safeSetFavs(favs) {
+    try { localStorage.setItem(FAVORITES_KEY, JSON.stringify(favs)); } catch (e) {}
+  }
 
-    function normalizeSearch(value) {
-      return String(value)
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase();
-    }
+  function migrateOldFavsIfAny(items) {
+    // si tenían favoritos por URL vieja, los convertimos a _id cuando se pueda
+    let old = [];
+    try {
+      old = JSON.parse(localStorage.getItem(FAVORITES_OLD_KEY) || '[]');
+      if (!Array.isArray(old)) old = [];
+    } catch (e) { old = []; }
 
-    function isType(it, want) {
-      const type = it?.meta?.type || "";
-      if (want === "SPORT") return type === "sport";
-      if (want === "MOVIE") return type === "movie";
-      if (want === "SERIES") return type === "series";
+    if (!old.length) return;
+
+    const favs = new Set(safeGetFavs());
+    const byU = new Map(items.map(it => [it.u, it._id]));
+    old.forEach(u => {
+      const id = byU.get(u);
+      if (id) favs.add(id);
+    });
+    safeSetFavs(Array.from(favs));
+    try { localStorage.removeItem(FAVORITES_OLD_KEY); } catch(e) {}
+  }
+
+  function normalizeItems(data) {
+    if (!Array.isArray(data)) return null;
+    const items = data
+      .filter(it => it && (it.t || it.title) )
+      .map(it => {
+        const _id = String(it._id || it.id || '');
+        const t = String(it.t || it.title || '').trim();
+        const cat = normalizeCategory(it.cat);
+        const img = sanitizeUrl(it.poster) || sanitizeUrl(it.img) || 'logo.png';
+        const u = sanitizeUrl(it.u) || `${window.location.href}#item=${encodeURIComponent(_id || t)}`;
+        const meta = (it.meta && typeof it.meta === 'object') ? it.meta : {};
+        return { _id, t, cat, img, u, meta };
+      })
+      .filter(it => it.t.length > 0);
+
+    return items;
+  }
+
+  function normalizeSearch(value) {
+    return String(value ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+  }
+
+  function normalizeCategoryKey(value) {
+    return normalizeSearch(value).replace(/\s+/g, ' ').trim();
+  }
+
+  async function checkVipGate() {
+    const userId = tg?.initDataUnsafe?.user?.id;
+    if (!userId) return true; // si no hay Telegram, deja ver (modo navegador)
+
+    try {
+      const res = await fetch(`${API_URL}/api/vip?id=${encodeURIComponent(userId)}`);
+      const data = await res.json();
+      const vip = !!data.vip;
+      document.getElementById('vip-lock').style.display = vip ? 'none' : 'flex';
+      return vip;
+    } catch (e) {
+      // si falla, no bloqueamos duro
       return true;
     }
+  }
 
-    function buildPrimaryFilters() {
-      const bar = document.getElementById("filter-bar");
-      bar.innerHTML = PRIMARY_FILTERS.map(p => `
-        <div class="pill ${p.key === primary ? "active" : ""}"
-             onclick="setPrimary('${p.key}')">${escapeHtml(p.label)}</div>
-      `).join("");
-    }
+  async function init() {
+    if (initInProgress) return;
+    initInProgress = true;
 
-    function computeSubfilters() {
-      // subfiltros:
-      // - Deportes: por cat (LaLiga/UFC/Grand Slam/etc.)
-      // - Pelis/Series: por section (Estrenos/Nuevos Episodios/Géneros/Novedades)
-      const items = allItems.filter(it => isType(it, primary));
-      const subBar = document.getElementById("subfilter-bar");
+    let timeoutId = null;
+    try {
+      const controller = new AbortController();
+      timeoutId = setTimeout(() => controller.abort(), fetchTimeoutMs);
 
-      let options = ["ALL"];
-      if (primary === "SPORT") {
-        const cats = Array.from(new Set(items.map(it => it.cat).filter(Boolean)));
-        options = ["ALL", ...cats];
-      } else if (primary === "MOVIE" || primary === "SERIES") {
-        const secs = Array.from(new Set(items.map(it => it?.meta?.section).filter(Boolean)));
-        options = ["ALL", ...secs];
-      } else {
-        subBar.style.display = "none";
-        subfilter = "ALL";
+      const res = await fetch(`${API_URL}/api/links`, { signal: controller.signal });
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+
+      const data = await res.json();
+      const normalized = normalizeItems(data);
+      if (normalized === null) throw new Error('Respuesta inválida del servidor.');
+
+      allItems = normalized;
+
+      migrateOldFavsIfAny(allItems);
+
+      buildFilters();
+      render();
+
+      const loader = document.getElementById('loader');
+      loader.textContent = loaderDefaultText;
+      loader.style.display = 'none';
+      retryCount = 0;
+      clearStatus();
+
+      await checkVipGate();
+
+    } catch (e) {
+      retryCount += 1;
+      if (retryCount > maxRetries) {
+        showError('❌ No se pudo conectar. Verifica tu conexión y reintenta.');
         return;
       }
+      showError(`❌ Error al conectar. Reintentando (${retryCount}/${maxRetries})...`);
+      const delay = baseRetryDelay * retryCount;
+      setTimeout(init, delay);
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+      initInProgress = false;
+    }
+  }
 
-      subBar.style.display = "flex";
-      subBar.innerHTML = options.map(opt => {
-        const label = opt === "ALL" ? "🧠 TODO" : opt;
-        const active = opt === subfilter ? "active" : "";
-        const safe = escapeHtml(label);
-        return `<div class="pill ${active}" onclick="setSubfilter(${JSON.stringify(opt)})">${safe}</div>`;
-      }).join("");
+  function buildFilters() {
+    const filterBar = document.getElementById('filter-bar');
+    filterBar.innerHTML = FIXED_PILLS.map(pill => `
+      <div class="pill ${pill.value === currentFilter ? 'active' : ''}"
+           onclick="filterData(${JSON.stringify(pill.value)}, this)">${escapeHtml(pill.label)}</div>
+    `).join('');
+  }
 
-      // si subfilter ya no existe, reset
-      if (!options.includes(subfilter)) subfilter = "ALL";
+  function isSportsItem(it) {
+    const type = String(it.meta?.type || '');
+    return type === 'sport' || normalizeSearch(it.cat).includes('deport') || normalizeSearch(it.cat).includes('laliga') || normalizeSearch(it.cat).includes('liga mx');
+  }
+
+  function isMovieItem(it) {
+    const type = String(it.meta?.type || '');
+    return type === 'movie' || normalizeSearch(it.cat).includes('pel');
+  }
+
+  function isSeriesItem(it) {
+    const type = String(it.meta?.type || '');
+    return type === 'series' || normalizeSearch(it.cat).includes('series');
+  }
+
+  function render() {
+    const container = document.getElementById('container');
+    const favs = new Set(safeGetFavs());
+
+    let filtered = allItems;
+
+    // filtro principal
+    if (currentFilter === '⭐ FAVORITOS') {
+      filtered = filtered.filter(i => favs.has(i._id));
+    } else if (currentFilter === '⚽ DEPORTES') {
+      filtered = filtered.filter(isSportsItem);
+    } else if (currentFilter === '🎬 PELÍCULAS') {
+      filtered = filtered.filter(isMovieItem);
+    } else if (currentFilter === '📺 SERIES') {
+      filtered = filtered.filter(isSeriesItem);
     }
 
-    function setPrimary(key) {
-      primary = key;
-      subfilter = "ALL";
-      buildPrimaryFilters();
-      computeSubfilters();
-      tg?.HapticFeedback?.impactOccurred?.("light");
-      render();
+    // búsqueda inteligente: incluye meta
+    if (currentSearch) {
+      const q = normalizeSearch(currentSearch);
+      filtered = filtered.filter(i => {
+        const blob = [
+          i.t, i.cat,
+          i.meta?.competition, i.meta?.jornada, i.meta?.canal, i.meta?.venue,
+          (i.meta?.flags || []).join(' '), i.meta?.quality, i.meta?.se,
+          i.meta?.section, i.meta?.date_label
+        ].filter(Boolean).join(' ');
+        return normalizeSearch(blob).includes(q);
+      });
     }
 
-    function setSubfilter(key) {
-      subfilter = key;
-      computeSubfilters();
-      tg?.HapticFeedback?.impactOccurred?.("light");
-      render();
+    if (filtered.length === 0) {
+      container.innerHTML = `
+        <div class="card">
+          <div class="info">
+            <div class="title">No hay resultados para mostrar.</div>
+            <div class="subtitle">Intenta cambiar el filtro o buscar otra palabra.</div>
+          </div>
+        </div>`;
+      return;
     }
 
-    function openModal(it) {
-      const titleEl = document.getElementById("modal-title");
-      const catEl = document.getElementById("modal-cat");
-      const bodyEl = document.getElementById("modal-body");
-      const backdrop = document.getElementById("modal-backdrop");
+    container.innerHTML = filtered.map(i => {
+      const favActive = favs.has(i._id);
+      const img = escapeHtml(i.img);
+      const cat = escapeHtml(i.cat);
+      const title = escapeHtml(i.t);
 
-      titleEl.textContent = it?.t || "Detalle";
-      catEl.textContent = it?.cat || "";
-
-      const meta = it?.meta || {};
-      const lines = [];
-
-      if (meta.type === "sport") {
-        if (meta.competition) lines.push(`<div class="kv"><b>Liga:</b> ${escapeHtml(meta.competition)}</div>`);
-        if (meta.jornada) lines.push(`<div class="kv"><b>Jornada:</b> ${escapeHtml(meta.jornada)}</div>`);
-        if (meta.venue) lines.push(`<div class="kv"><b>Sede:</b> ${escapeHtml(meta.venue)}</div>`);
-        const time = [meta.hora_original, meta.timezone].filter(Boolean).join(" ");
-        if (time) lines.push(`<div class="kv"><b>Hora:</b> ${escapeHtml(time)}</div>`);
-        if (meta.canal) lines.push(`<div class="kv"><b>Canal:</b> ${escapeHtml(meta.canal)}</div>`);
-        if (meta.ronda) lines.push(`<div class="kv"><b>Ronda:</b> ${escapeHtml(meta.ronda)}</div>`);
-        if (meta.date_label) lines.push(`<div class="kv"><b>Fecha:</b> ${escapeHtml(meta.date_label)}</div>`);
+      // subtítulo según tipo
+      let sub = '';
+      if (isSportsItem(i)) {
+        const comp = i.meta?.competition ? `${i.meta.competition}` : '';
+        const j = i.meta?.jornada ? `J${i.meta.jornada}` : '';
+        const venue = i.meta?.venue ? `${i.meta.venue}` : '';
+        const h = i.meta?.hora_original || '';
+        const tz = i.meta?.timezone || '';
+        const canal = i.meta?.canal || '';
+        const parts = [comp, j, venue, (h && tz) ? `${h} ${tz}` : h, canal].filter(Boolean);
+        sub = parts.join(' • ');
       } else {
-        const flags = Array.isArray(meta.flags) ? meta.flags.join(" • ") : "";
-        if (flags) lines.push(`<div class="kv"><b>Audio/Sub:</b> ${escapeHtml(flags)}</div>`);
-        if (meta.quality) lines.push(`<div class="kv"><b>Calidad:</b> ${escapeHtml(meta.quality)}</div>`);
-        if (meta.se) lines.push(`<div class="kv"><b>Temporada/Ep:</b> ${escapeHtml(meta.se)}</div>`);
-        if (meta.section) lines.push(`<div class="kv"><b>Sección:</b> ${escapeHtml(meta.section)}</div>`);
-        if (meta.date_label) lines.push(`<div class="kv"><b>Día:</b> ${escapeHtml(meta.date_label)}</div>`);
-      }
-
-      bodyEl.innerHTML = lines.join("") || `<div class="kv">Sin datos adicionales.</div>`;
-      backdrop.style.display = "flex";
-      tg?.HapticFeedback?.impactOccurred?.("light");
-    }
-
-    function closeModal() {
-      document.getElementById("modal-backdrop").style.display = "none";
-    }
-
-    function copyModal() {
-      const title = document.getElementById("modal-title").textContent || "";
-      const cat = document.getElementById("modal-cat").textContent || "";
-      const body = document.getElementById("modal-body").innerText || "";
-      const text = `${title}\n${cat}\n${body}`.trim();
-      navigator.clipboard?.writeText(text);
-      showStatus("✅ Copiado.", 1);
-    }
-
-    function renderSectionHeader(text) {
-      return `<div class="section-title">${escapeHtml(text)}</div>`;
-    }
-
-    function renderItemCard(it) {
-      const favs = safeGetFavs();
-      const key = itemKey(it);
-      const img = sanitizeUrl(it.img) || "logo.png";
-      const title = escapeHtml(it.t || "");
-      const cat = escapeHtml(it.cat || "");
-      const meta = it.meta || {};
-
-      let metaLine = "";
-      if (meta.type === "sport") {
-        const pieces = [];
-        if (meta.venue) pieces.push(meta.venue);
-        const time = [meta.hora_original, meta.timezone].filter(Boolean).join(" ");
-        if (time) pieces.push(time);
-        if (meta.canal) pieces.push(meta.canal);
-        metaLine = escapeHtml(pieces.join(" • "));
-      } else {
-        const pieces = [];
-        if (meta.se) pieces.push(meta.se);
-        if (Array.isArray(meta.flags) && meta.flags.length) pieces.push(meta.flags.slice(0,2).join(" "));
-        if (meta.quality) pieces.push(meta.quality);
-        metaLine = escapeHtml(pieces.join(" • "));
+        const sec = i.meta?.section || '';
+        const se = i.meta?.se || '';
+        const q = i.meta?.quality || '';
+        const flags = (i.meta?.flags || []).slice(0,2).join(' ');
+        const parts = [sec, se, flags, q].filter(Boolean);
+        sub = parts.join(' • ');
       }
 
       return `
-        <div class="card" onclick="window.__openItem(${JSON.stringify(key)})">
+        <div class="card">
           <div class="logo-container">
-            <img src="${escapeHtml(img)}" class="logo-img" loading="lazy" onerror="this.src='logo.png'">
+            <img src="${img}" class="logo-img" loading="lazy" onerror="this.src='logo.png'">
           </div>
           <div class="info">
             <div class="cat-tag">${cat}</div>
             <div class="title">${title}</div>
-            <div class="meta">${metaLine}</div>
+            <div class="subtitle">${escapeHtml(sub || ' ')}</div>
           </div>
           <div class="actions">
-            <button class="btn-fav ${favs.includes(key) ? "active" : ""}"
-                    onclick="event.stopPropagation(); toggleFav(${JSON.stringify(key)})"
-                    aria-label="Favorito">★</button>
+            <button class="btn-fav ${favActive ? 'active' : ''}" onclick="toggleFav(${JSON.stringify(i._id)})">★</button>
+            <button class="btn-play" onclick="openInfo(${JSON.stringify(i)})">INFO</button>
           </div>
-        </div>
-      `;
+        </div>`;
+    }).join('');
+  }
+
+  function toggleFav(id) {
+    const favs = new Set(safeGetFavs());
+    if (favs.has(id)) favs.delete(id);
+    else favs.add(id);
+    safeSetFavs(Array.from(favs));
+    tg?.HapticFeedback?.impactOccurred?.('light');
+    render();
+  }
+
+  function filterData(cat, el) {
+    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    if (el) el.classList.add('active');
+    currentFilter = cat;
+    tg?.HapticFeedback?.impactOccurred?.('light');
+    render();
+  }
+
+  // Modal INFO
+  function openInfo(item) {
+    const modal = document.getElementById('modal');
+    document.getElementById('m-cat').textContent = item.cat || '';
+    document.getElementById('m-title').textContent = item.t || '';
+    const meta = item.meta || {};
+
+    let lines = [];
+
+    if (isSportsItem(item)) {
+      if (meta.competition) lines.push(`<span class="kv">Competencia:</span> ${escapeHtml(meta.competition)}`);
+      if (meta.jornada) lines.push(`<span class="kv">Jornada:</span> ${escapeHtml(meta.jornada)}`);
+      if (meta.venue) lines.push(`<span class="kv">Sede:</span> ${escapeHtml(meta.venue)}`);
+      if (meta.ronda) lines.push(`<span class="kv">Ronda:</span> ${escapeHtml(meta.ronda)}`);
+      const time = [meta.hora_original, meta.timezone].filter(Boolean).join(' ');
+      if (time) lines.push(`<span class="kv">Horario:</span> ${escapeHtml(time)}`);
+      if (meta.canal) lines.push(`<span class="kv">Canal:</span> ${escapeHtml(meta.canal)}`);
+      if (meta.date_label) lines.push(`<span class="kv">Sección:</span> ${escapeHtml(meta.date_label)}`);
+    } else {
+      if (meta.section) lines.push(`<span class="kv">Sección:</span> ${escapeHtml(meta.section)}`);
+      if (meta.se) lines.push(`<span class="kv">Episodio:</span> ${escapeHtml(meta.se)}`);
+      if ((meta.flags || []).length) lines.push(`<span class="kv">Audio/Sub:</span> ${escapeHtml(meta.flags.join(' • '))}`);
+      if (meta.quality) lines.push(`<span class="kv">Calidad:</span> ${escapeHtml(meta.quality)}`);
+      if (meta.date_label) lines.push(`<span class="kv">Fecha:</span> ${escapeHtml(meta.date_label)}`);
+      if (meta.title_clean) lines.push(`<span class="kv">Título limpio:</span> ${escapeHtml(meta.title_clean)}`);
     }
 
-    function applyFilters(items) {
-      let out = items.slice();
-      const favs = safeGetFavs();
+    document.getElementById('m-meta').innerHTML = lines.length ? lines.join('<br>') : 'Sin detalles adicionales.';
+    modal.style.display = 'flex';
+    tg?.HapticFeedback?.impactOccurred?.('light');
+  }
 
-      if (primary === "FAVS") out = out.filter(it => favs.includes(itemKey(it)));
-      else if (primary !== "ALL") out = out.filter(it => isType(it, primary));
+  function closeInfo() {
+    document.getElementById('modal').style.display = 'none';
+  }
 
-      if (subfilter !== "ALL") {
-        if (primary === "SPORT") out = out.filter(it => (it.cat || "") === subfilter);
-        if (primary === "MOVIE" || primary === "SERIES") out = out.filter(it => (it?.meta?.section || "") === subfilter);
-      }
+  document.getElementById('m-close').addEventListener('click', closeInfo);
+  document.getElementById('modal').addEventListener('click', (e) => {
+    if (e.target.id === 'modal') closeInfo();
+  });
 
-      if (currentSearch) {
-        const q = normalizeSearch(currentSearch);
-        out = out.filter(it => {
-          const t = normalizeSearch(it.t || "");
-          const cat = normalizeSearch(it.cat || "");
-          const canal = normalizeSearch(it?.meta?.canal || "");
-          const venue = normalizeSearch(it?.meta?.venue || "");
-          const comp = normalizeSearch(it?.meta?.competition || "");
-          return t.includes(q) || cat.includes(q) || canal.includes(q) || venue.includes(q) || comp.includes(q);
-        });
-      }
+  document.getElementById('search').addEventListener('input', (e) => {
+    currentSearch = e.target.value;
+    render();
+  });
 
-      return out;
+  document.getElementById('status-close').addEventListener('click', () => clearStatus());
+
+  document.getElementById('btn-request-vip').addEventListener('click', () => {
+    try {
+      tg?.sendData?.(JSON.stringify({ action: "vip_request" }));
+      showStatus("✅ Solicitud enviada al administrador.", 1, true);
+    } catch (e) {
+      showStatus("⚠️ No se pudo enviar solicitud. Abre el bot y usa 'Solicitar acceso'.", 2, true);
     }
+  });
 
-    function render() {
-      const container = document.getElementById("container");
-      const loader = document.getElementById("loader");
-
-      const filtered = applyFilters(allItems);
-
-      loader.style.display = allItems.length ? "none" : "block";
-
-      if (!filtered.length) {
-        container.innerHTML = `
-          <div class="card" style="cursor:default;">
-            <div class="info">
-              <div class="title">No hay resultados para mostrar.</div>
-              <div class="meta">Prueba otro filtro o espera a que el servidor actualice.</div>
-            </div>
-          </div>
-        `;
-        return;
-      }
-
-      // Render agrupado
-      let html = "";
-
-      if (primary === "SPORT") {
-        const groups = {};
-        filtered.forEach(it => {
-          const meta = it.meta || {};
-          const comp = meta.competition || "Deportes";
-          const j = meta.jornada ? `Jornada ${meta.jornada}` : "";
-          const header = [comp, j].filter(Boolean).join(" • ");
-          (groups[header] ||= []).push(it);
-        });
-
-        Object.keys(groups).slice(0, 20).forEach(h => {
-          html += renderSectionHeader(`🏆 ${h}`);
-          html += `<div class="hint">Toca una tarjeta para ver detalles.</div>`;
-          groups[h].slice(0, 60).forEach(it => { html += renderItemCard(it); });
-        });
-
-      } else if (primary === "MOVIE" || primary === "SERIES") {
-        const groups = {};
-        filtered.forEach(it => {
-          const sec = it?.meta?.section || "Novedades";
-          (groups[sec] ||= []).push(it);
-        });
-
-        Object.keys(groups).slice(0, 25).forEach(h => {
-          html += renderSectionHeader(`📌 ${h.toUpperCase()}`);
-          groups[h].slice(0, 80).forEach(it => { html += renderItemCard(it); });
-        });
-
-      } else {
-        // ALL o FAVS: por tipo
-        const byType = { sport: [], movie: [], series: [] };
-        filtered.forEach(it => {
-          const t = it?.meta?.type || "";
-          if (byType[t]) byType[t].push(it);
-        });
-
-        if (byType.sport.length) {
-          html += renderSectionHeader("⚽ DEPORTES");
-          byType.sport.slice(0, 40).forEach(it => { html += renderItemCard(it); });
-        }
-        if (byType.movie.length) {
-          html += renderSectionHeader("🎬 PELÍCULAS");
-          byType.movie.slice(0, 40).forEach(it => { html += renderItemCard(it); });
-        }
-        if (byType.series.length) {
-          html += renderSectionHeader("📺 SERIES");
-          byType.series.slice(0, 40).forEach(it => { html += renderItemCard(it); });
-        }
-      }
-
-      container.innerHTML = html;
-    }
-
-    async function checkVip() {
-      try {
-        const uid = tg?.initDataUnsafe?.user?.id;
-        if (!uid) return;
-        const res = await fetch(`${API_URL}/api/is_vip?uid=${encodeURIComponent(uid)}`);
-        const data = await res.json();
-        const lock = document.getElementById("vip-lock");
-        if (data?.ok && data?.vip === false) {
-          lock.style.display = "block";
-        } else {
-          lock.style.display = "none";
-        }
-      } catch {}
-    }
-
-    async function init() {
-      if (initInProgress) return;
-      initInProgress = true;
-
-      let timeoutId = null;
-      try {
-        const controller = new AbortController();
-        timeoutId = setTimeout(() => controller.abort(), fetchTimeoutMs);
-
-        const res = await fetch(`${API_URL}/api/links`, { signal: controller.signal });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-
-        if (!Array.isArray(data)) throw new Error("Respuesta inválida");
-        // normaliza imgs y estructura mínima
-        allItems = data.map(it => ({
-          _id: it._id,
-          t: String(it.t || ""),
-          u: String(it.u || ""),
-          cat: String(it.cat || ""),
-          img: sanitizeUrl(it.img) || "logo.png",
-          meta: it.meta || {}
-        }));
-
-        lastFetchAt = Date.now();
-        retryCount = 0;
-
-        buildPrimaryFilters();
-        computeSubfilters();
-        render();
-        clearStatus();
-
-        document.getElementById("loader").style.display = "none";
-      } catch (e) {
-        retryCount += 1;
-        if (retryCount > maxRetries) {
-          showError("❌ No se pudo conectar. Verifica tu conexión y reintenta.");
-          return;
-        }
-        showError(`❌ Error al conectar. Reintentando (${retryCount}/${maxRetries})...`);
-        setTimeout(init, baseRetryDelay * retryCount);
-      } finally {
-        if (timeoutId) clearTimeout(timeoutId);
-        initInProgress = false;
-      }
-    }
-
-    // Auto-refresh cada 15 minutos (manual 1)
-    setInterval(() => {
-      if (!lastFetchAt) return;
-      const mins = (Date.now() - lastFetchAt) / 60000;
-      if (mins >= 15) init();
-    }, 60000);
-
-    // Handlers UI
-    document.getElementById("search").addEventListener("input", (e) => {
-      currentSearch = e.target.value;
-      render();
-    });
-    document.getElementById("status-close").addEventListener("click", clearStatus);
-
-    document.getElementById("modal-close").addEventListener("click", closeModal);
-    document.getElementById("modal-backdrop").addEventListener("click", (e) => {
-      if (e.target.id === "modal-backdrop") closeModal();
-    });
-    document.getElementById("modal-copy").addEventListener("click", copyModal);
-
-    // expone método para abrir item
-    window.__openItem = (key) => {
-      const it = allItems.find(x => (x._id || x.u || x.t) === key);
-      if (it) openModal(it);
-    };
-
-    tg?.ready?.();
-    tg?.expand?.();
-
-    buildPrimaryFilters();
-    computeSubfilters();
+  // Auto refresh cada 15 min
+  setInterval(() => {
     init();
-    checkVip();
-  </script>
+  }, 15 * 60 * 1000);
+
+  tg?.ready?.();
+  tg?.expand?.();
+  init();
+
+  // exponer funciones globales para onclick inline
+  window.toggleFav = toggleFav;
+  window.filterData = filterData;
+  window.openInfo = openInfo;
+</script>
 </body>
 </html>
