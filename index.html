@@ -8,11 +8,11 @@
     :root{
       --bg:#0b0b0f; --card:#141420; --muted:#b7b7c6; --text:#fff;
       --line:#23233a; --pill:#1d1d2e; --accent:#ff3ea5;
-      --good:#18d26b; --warn:#ffbf2f;
+      --good:#18d26b; --warn:#ffbf2f; --bad:#ff6b6b;
     }
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
-    header{position:sticky;top:0;background:rgba(11,11,15,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:5}
+    header{position:sticky;top:0;background:rgba(11,11,15,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:5}
     .wrap{max-width:1100px;margin:0 auto;padding:14px}
     .top{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
     .brand{display:flex;gap:10px;align-items:center}
@@ -28,7 +28,7 @@
     .tabs{display:flex;gap:8px;flex-wrap:wrap}
     .tab{
       padding:10px 12px;border-radius:999px;border:1px solid var(--line);background:var(--pill);
-      color:var(--text);cursor:pointer;font-weight:700;font-size:13px
+      color:var(--text);cursor:pointer;font-weight:800;font-size:13px
     }
     .tab.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(255,62,165,.15) inset}
     .small{font-size:12px;color:var(--muted)}
@@ -40,37 +40,44 @@
     .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px;padding:14px 0}
     .section{grid-column:1/-1;margin-top:10px}
     .section h2{margin:0 0 10px 0;font-size:15px;color:#f2f2ff;letter-spacing:.2px}
-    .section h2 .sub{color:var(--muted);font-weight:600}
+    .section h2 .sub{color:var(--muted);font-weight:650}
     .card{
       grid-column:span 12;background:var(--card);border:1px solid var(--line);border-radius:18px;
       overflow:hidden;display:flex;gap:12px;padding:12px;
-      position:relative; /* (añadido) para overlay lock */
+      position:relative;
     }
     @media(min-width:720px){ .card{grid-column:span 6} }
     @media(min-width:980px){ .card{grid-column:span 4} }
+
     .poster{width:86px;height:124px;border-radius:14px;border:1px solid var(--line);background:#0f0f18;object-fit:cover}
     .meta{flex:1;min-width:0}
-    .t{font-weight:800;margin:0 0 6px 0;font-size:14px}
+    .t{font-weight:900;margin:0 0 6px 0;font-size:14px}
     .pill{display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--muted);font-size:12px;margin-right:6px;margin-bottom:6px}
-    .line{color:var(--muted);font-size:12px;line-height:1.35}
-    .actions{display:flex;gap:8px;align-items:center;justify-content:flex-end}
-    .star{
+    .pill.live{border-color:rgba(24,210,107,.5);color:#eafff3}
+    .pill.warn{border-color:rgba(255,191,47,.55);color:#fff6d8}
+    .line{color:var(--muted);font-size:12px;line-height:1.35;word-break:break-word}
+    .solid{height:1px;background:rgba(255,255,255,.15);margin:6px 0 8px 0}
+    .light{height:1px;background:rgba(255,255,255,.08);margin:8px 0}
+    .actions{display:flex;gap:8px;align-items:flex-end;justify-content:flex-end;flex-direction:column}
+    .btn{
       border:1px solid var(--line);background:#0f0f18;color:#fff;border-radius:12px;
-      padding:9px 10px;cursor:pointer;font-weight:900
+      padding:9px 10px;cursor:pointer;font-weight:900;font-size:12px;white-space:nowrap
     }
-    .star.on{border-color:var(--warn);box-shadow:0 0 0 2px rgba(255,191,47,.12) inset}
+    .btn.small{padding:7px 9px;font-size:12px}
+    .btn.on{border-color:var(--warn);box-shadow:0 0 0 2px rgba(255,191,47,.12) inset}
+    .btn.disabled{opacity:.45;cursor:not-allowed}
+    .btn.primary{border-color:rgba(255,62,165,.65);box-shadow:0 0 0 2px rgba(255,62,165,.12) inset}
     .footer{padding:22px 0;color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin-top:18px}
     .hint{color:var(--muted);font-size:12px;margin-top:6px}
     .badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.03);font-size:12px}
     .badge.good b{color:var(--good)}
 
-    /* (añadido) overlay cuando el contenido es VIP y no tienes VIP */
     .lock{
       position:absolute;inset:0;background:rgba(0,0,0,.65);
       display:flex;align-items:center;justify-content:center;text-align:center;padding:14px;
     }
     .lock .box{
-      max-width:260px;border:1px solid rgba(255,255,255,.14);
+      max-width:270px;border:1px solid rgba(255,255,255,.14);
       background:rgba(0,0,0,.35);border-radius:14px;padding:12px;
     }
     .lock .box h4{margin:0 0 6px 0;font-size:14px}
@@ -82,14 +89,14 @@
   <div class="wrap">
     <div class="top">
       <div class="brand">
-        <img class="logo" id="logo" src="./logo.png" alt="logo" onerror="this.src='https://bajacousins-lang.github.io/kaelus-app/logo.png'"/>
+        <img class="logo" id="logo" src="./logo.png" alt="logo"
+             onerror="this.src='https://bajacousins-lang.github.io/kaelus-app/logo.png'"/>
         <div>
           <div class="title">BCNTV WebPremium</div>
           <div class="vip" id="vipLine">Estado: <b>VIP</b></div>
         </div>
       </div>
 
-      <!-- (corregido/añadido) mantenemos tu badge y añadimos botón config sin borrar -->
       <div class="row">
         <div class="badge good" id="statusBadge">● <span id="statusText">Conectando…</span></div>
         <button class="tab" id="btnConfig" type="button" title="Configurar API/VIP">⚙️ Config</button>
@@ -100,7 +107,7 @@
       <input id="q" type="search" placeholder="Buscar por título, canal, estadio, liga (LaLiga), etc…"/>
       <div class="tabs">
         <button class="tab active" data-tab="all">Todo</button>
-        <button class="tab" data-tab="favs">Favs</button>
+        <button class="tab" data-tab="favs">Favoritos</button>
         <button class="tab" data-tab="sports">Deportes</button>
         <button class="tab" data-tab="movies">Películas</button>
         <button class="tab" data-tab="series">Series</button>
@@ -117,7 +124,6 @@
         <option value="GOLF">Golf</option>
       </select>
 
-      <!-- (añadido) filtro VIP como en la versión mejorada (sin borrar nada) -->
       <select id="vipFilter">
         <option value="show_locked">VIP: mostrar (bloqueados si no tienes)</option>
         <option value="show">VIP: mostrar solo si tienes</option>
@@ -135,7 +141,7 @@
   <div class="grid" id="grid"></div>
 
   <div class="footer">
-    <div>Si ves contenido fuera de lugar, es porque el scraper detectó texto basura. El bot ya aplica limpieza (bad_phrases) y estructura por niveles.</div>
+    <div>Tips: En deportes puedes descargar recordatorios (ICS) a 5/10/15 min antes. Si el evento ya inició, esos botones se desactivan.</div>
   </div>
 </main>
 
@@ -143,7 +149,7 @@
   // ===== Config =====
   const params = new URLSearchParams(location.search);
 
-  // (corregido) VIP persistente en localStorage + soporte ?vip=1 / ?vip=0
+  // VIP persistente: ?vip=1 / ?vip=0
   let VIP = (function(){
     const v = (params.get("vip") || "").toLowerCase();
     if(v === "1" || v === "true") localStorage.setItem("BCNTV_VIP", "1");
@@ -151,16 +157,17 @@
     return localStorage.getItem("BCNTV_VIP") === "1";
   })();
 
+  // Backend por defecto (Render). Para GitHub Pages, normalmente no se toca.
   const DEFAULT_API_BASE = "https://kaelus-bot.onrender.com";
 
-  // (corregido) API base persistente + soporte ?api=...
+  // API base persistente + soporte ?api=...
   let API_BASE = (function(){
     const p = (params.get("api") || "").trim();
     if(p) localStorage.setItem("BCNTV_API_BASE", p);
     return (localStorage.getItem("BCNTV_API_BASE") || DEFAULT_API_BASE).replace(/\/$/,"");
   })();
 
-  // (añadido) soporte API key (x-api-key) + ?key=...
+  // API key opcional (x-api-key) + ?key=...
   let API_KEY = (function(){
     const k = (params.get("key") || "").trim();
     if(k) localStorage.setItem("BCNTV_API_KEY", k);
@@ -169,9 +176,8 @@
 
   let API_URL = API_BASE + "/api/links";
 
-  // (corregido) reflejar VIP/API en UI (sin borrar tus líneas, solo las hacemos dinámicas)
   function applyUiConfig(){
-    document.getElementById("vipLine").innerHTML = "Estado: " + (VIP ? "<b>VIP</b>" : "<span style='color:#ff6b6b;font-weight:800'>No VIP</span>");
+    document.getElementById("vipLine").innerHTML = "Estado: " + (VIP ? "<b>VIP</b>" : "<span style='color:var(--bad);font-weight:900'>No VIP</span>");
     const keyInfo = API_KEY ? " (key: sí)" : " (key: no)";
     document.getElementById("apiHint").textContent = "API: " + API_URL + keyInfo;
   }
@@ -203,10 +209,8 @@
   sportsSub.addEventListener("change", ()=> render());
   vipFilter.addEventListener("change", ()=> render());
 
-  // (añadido) botón Config para cambiar API/VIP/KEY sin tocar tu estructura
   document.getElementById("btnConfig").addEventListener("click", ()=>{
     try{ vibrate(12); }catch(e){}
-
     const api = prompt("API Base URL (ej: https://kaelus-bot.onrender.com)", API_BASE);
     if(api !== null){
       const v = (api || "").trim();
@@ -232,13 +236,10 @@
   });
 
   function loadFavs(){
-    try{
-      return JSON.parse(localStorage.getItem("bcntv_favs")||"[]");
-    }catch(e){ return []; }
+    try{ return JSON.parse(localStorage.getItem("bcntv_favs")||"[]"); }
+    catch(e){ return []; }
   }
-  function saveFavs(){
-    localStorage.setItem("bcntv_favs", JSON.stringify(FAVS));
-  }
+  function saveFavs(){ localStorage.setItem("bcntv_favs", JSON.stringify(FAVS)); }
   function isFav(id){ return FAVS.includes(id); }
   function toggleFav(id){
     vibrate(18);
@@ -258,8 +259,6 @@
   async function fetchData(){
     try{
       setStatus(true, "Cargando…");
-
-      // (añadido) headers con x-api-key si existe
       const headers = {};
       if(API_KEY) headers["x-api-key"] = API_KEY;
 
@@ -268,17 +267,11 @@
       const j = await r.json();
       DATA = Array.isArray(j) ? j : [];
 
-      // (añadido) caché local para modo offline
-      try{
-        localStorage.setItem("BCNTV_CACHE_ITEMS", JSON.stringify(DATA));
-      }catch(e){}
-
+      try{ localStorage.setItem("BCNTV_CACHE_ITEMS", JSON.stringify(DATA)); }catch(e){}
       setStatus(true, "Online (" + DATA.length + ")");
       render();
     }catch(e){
       console.error(e);
-
-      // (añadido) fallback a caché si existe
       const cached = localStorage.getItem("BCNTV_CACHE_ITEMS");
       if(cached){
         try{
@@ -288,39 +281,34 @@
           return;
         }catch(_){}
       }
-
       setStatus(false, "Offline");
       render();
     }
   }
 
+  function escapeHtml(s){
+    return (s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
+  }
+
+  function safeLower(s){ return (s||"").toLowerCase(); }
+
   function textOfItem(it){
     const t = (it.t||"");
     const cat = (it.cat||"");
     const m = it.meta||{};
-    return (t+" "+cat+" "+(m.canal||"")+" "+(m.sede||"")+" "+(m.competition||"")+" "+(m.jornada||"")+" "+(m.section||"")+" "+(m.date_label||"")).toLowerCase();
+    const canales = Array.isArray(m.canales) ? m.canales.join(" ") : (m.canal||"");
+    return (t+" "+cat+" "+canales+" "+(m.sede||"")+" "+(m.competition||"")+" "+(m.jornada||"")+" "+(m.section||"")+" "+(m.super_section||"")+" "+(m.date_label||"")).toLowerCase();
   }
 
-  // (añadido) regla VIP, similar a la versión mejorada
   function allowByVip(it){
     const m = it.meta || {};
     const isVipItem = !!m.is_vip;
     const mode = vipFilter.value;
 
-    if(mode === "show_locked"){
-      // muestra todo; si es vip y no tienes, se verá bloqueado en la card()
-      return true;
-    }
-    if(mode === "show"){
-      if(!isVipItem) return true;
-      return VIP;
-    }
-    if(mode === "hide"){
-      return !isVipItem;
-    }
-    if(mode === "only"){
-      return isVipItem && VIP;
-    }
+    if(mode === "show_locked") return true;
+    if(mode === "show") return !isVipItem || VIP;
+    if(mode === "hide") return !isVipItem;
+    if(mode === "only") return isVipItem && VIP;
     return true;
   }
 
@@ -328,10 +316,8 @@
     const term = (q.value||"").trim().toLowerCase();
     let arr = DATA.slice();
 
-    // (añadido) VIP gate/filtro
     arr = arr.filter(allowByVip);
 
-    // Tab filter
     if(TAB === "sports"){
       arr = arr.filter(x => (x.meta && x.meta.type === "sport") || (x.cat||"").includes("DEPORT") || (x.cat||"").includes("LaLiga") || (x.cat||"").includes("Liga MX"));
       const sub = sportsSub.value;
@@ -352,11 +338,7 @@
       arr = arr.filter(x => isFav(x._id));
     }
 
-    // Search
-    if(term){
-      arr = arr.filter(x => textOfItem(x).includes(term));
-    }
-
+    if(term) arr = arr.filter(x => textOfItem(x).includes(term));
     return arr;
   }
 
@@ -365,69 +347,156 @@
     for(const it of arr){
       const m = it.meta||{};
       const comp = m.competition || "Deportes";
-      const j = m.jornada ? ("Jornada " + m.jornada) : "";
-      const key = (comp + (j ? (" • " + j) : "")).trim();
-      if(!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(it);
+      if(!groups.has(comp)) groups.set(comp, []);
+      groups.get(comp).push(it);
     }
     return groups;
   }
 
+  // VOD: date -> super_section -> section
   function groupVOD(arr){
-    // bucket -> section -> date_label -> items
     const out = new Map();
     for(const it of arr){
       const m = it.meta||{};
-      const bucket = (m.bucket||((m.type==="series")?"Series":"Peliculas")) || "Contenido";
-      const section = m.section || "Novedades";
-      const date = m.date_label || "";
-      const k1 = bucket;
-      if(!out.has(k1)) out.set(k1, new Map());
-      const secMap = out.get(k1);
-      if(!secMap.has(section)) secMap.set(section, new Map());
-      const dateMap = secMap.get(section);
-      if(!dateMap.has(date)) dateMap.set(date, []);
-      dateMap.get(date).push(it);
+      const date = (m.date_label || "").trim();
+      const superS = (m.super_section || (m.type==="series" ? "Nuevas Series" : "Nuevas Peliculas")).trim();
+      const sec = (m.section || "Novedades").trim();
+
+      if(!out.has(date)) out.set(date, new Map());
+      const ssMap = out.get(date);
+      if(!ssMap.has(superS)) ssMap.set(superS, new Map());
+      const secMap = ssMap.get(superS);
+      if(!secMap.has(sec)) secMap.set(sec, []);
+      secMap.get(sec).push(it);
     }
     return out;
   }
 
+  function fmtTimeTriplet(iso){
+    try{
+      const d = new Date(iso);
+      if(isNaN(d.getTime())) return null;
+
+      const opts = {hour:"numeric", minute:"2-digit"};
+      const et = new Intl.DateTimeFormat("es-MX", {...opts, timeZone:"America/New_York"}).format(d);
+      const ct = new Intl.DateTimeFormat("es-MX", {...opts, timeZone:"America/Chicago"}).format(d);
+      const pt = new Intl.DateTimeFormat("es-MX", {...opts, timeZone:"America/Los_Angeles"}).format(d);
+
+      // Normalizamos a AM/PM estilo manual (muchos navegadores ya lo devuelven así en es-MX)
+      return `${et} Este, ${ct} Centro, ${pt} Pacífico`;
+    }catch(e){ return null; }
+  }
+
+  function canUseIcs(m, mins){
+    if(!m || !m.start_utc) return false;
+    const start = new Date(m.start_utc);
+    if(isNaN(start.getTime())) return false;
+    const now = new Date();
+    const diffMs = start.getTime() - now.getTime();
+    if(diffMs <= 0) return false;
+    if(diffMs < mins * 60 * 1000) return false;
+    return true;
+  }
+
+  async function downloadIcs(itemId, mins){
+    try{
+      vibrate(12);
+      const headers = {};
+      if(API_KEY) headers["x-api-key"] = API_KEY;
+      const url = `${API_BASE}/api/ics/${encodeURIComponent(itemId)}?mins=${mins}`;
+      const r = await fetch(url, {headers});
+      if(!r.ok) throw new Error("HTTP " + r.status);
+      const blob = await r.blob();
+      const a = document.createElement("a");
+      const objectUrl = URL.createObjectURL(blob);
+      a.href = objectUrl;
+      a.download = `bcntv_${itemId}_${mins}m.ics`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(objectUrl), 1500);
+    }catch(e){
+      alert("No se pudo descargar el recordatorio (ICS).\n" + e.message);
+    }
+  }
+
+  function sportEmoji(cat, raw){
+    const c = safeLower(cat);
+    const r = safeLower(raw);
+    if(c.includes("golf") || r.includes("pga") || r.includes("liv golf") || r.includes("ryder") || r.includes("masters")) return "⛳";
+    if(c.includes("grand") || r.includes("wimbledon") || r.includes("roland") || r.includes("australian open") || r.includes("us open") || r.includes("atp") || r.includes("wta")) return "🎾";
+    if(c.includes("combate") || r.includes("ufc") || r.includes("wwe") || r.includes("box") || r.includes("boxeo") || r.includes("bellator")) return "🥊";
+    return "⚽";
+  }
+
   function card(it){
     const m = it.meta || {};
-    const pills = [];
-    if(it.cat) pills.push(it.cat);
-    if(m.section) pills.push(m.section);
-    if(m.se) pills.push(m.se);
-    if(m.quality) pills.push(m.quality);
-    if(Array.isArray(m.flags) && m.flags.length) pills.push(m.flags.join(" "));
-    if(m.canal) pills.push("📺 " + m.canal);
-    if(m.hora_original) pills.push("⏰ " + m.hora_original + (m.timezone ? (" " + m.timezone) : ""));
-    if(m.sede) pills.push("🏟️ " + m.sede);
-
-    const favOn = isFav(it._id);
-
-    // (añadido) overlay lock si es VIP y no tienes VIP (solo se verá cuando vipFilter=show_locked)
     const isVipItem = !!m.is_vip;
     const locked = isVipItem && !VIP && (vipFilter.value === "show_locked");
 
+    const favOn = isFav(it._id);
+    const favLabel = favOn ? "Quitar de favoritos" : "Agregar a favoritos";
+    const favIcon = favOn ? "★" : "☆";
+
+    const type = m.type || "";
+
+    // Pills principales
+    const pills = [];
+    if(type === "sport"){
+      const emoji = sportEmoji(it.cat||"", m.raw||"");
+      const comp = (m.competition || "Deportes");
+      pills.push(`${emoji} ${comp}`);
+      if(m.jornada) pills.push(`Jornada ${m.jornada}`);
+      if(m.is_live_now) pills.push("🔴 En Vivo");
+    }else{
+      if(it.cat) pills.push(it.cat);
+      if(m.super_section) pills.push(m.super_section);
+      if(m.section) pills.push(m.section);
+      if(m.se) pills.push(m.se);
+      if(m.quality) pills.push(m.quality);
+    }
+
+    const canales = Array.isArray(m.canales) ? m.canales : (m.canal ? [m.canal] : []);
+    const canalesTxt = canales.length ? canales.join(", ") : "";
+    const timeTriplet = (type === "sport" && m.start_utc) ? fmtTimeTriplet(m.start_utc) : null;
+
+    const ics5 = canUseIcs(m, 5);
+    const ics10 = canUseIcs(m, 10);
+    const ics15 = canUseIcs(m, 15);
+
+    const flags = (Array.isArray(m.flags) && m.flags.length) ? m.flags.join(" ") : "";
+
     return `
       <div class="card">
-        <img class="poster" loading="lazy" src="${it.img || "./logo.png"}" alt="img"
-             onerror="this.src='./logo.png'"/>
+        <img class="poster" loading="lazy" src="${escapeHtml(it.img || "./logo.png")}" alt="img" onerror="this.src='./logo.png'"/>
         <div class="meta">
           <p class="t">${escapeHtml(it.t || "")}</p>
+
           <div>
-            ${pills.slice(0,4).map(x=>`<span class="pill">${escapeHtml(x)}</span>`).join("")}
+            ${pills.slice(0,4).map(x=>{
+              const live = safeLower(x).includes("en vivo");
+              return `<span class="pill ${live ? "live":""}">${escapeHtml(x)}</span>`;
+            }).join("")}
           </div>
-          <div class="line">
-            ${m.type === "sport"
-              ? escapeHtml(((m.competition||"") + (m.jornada?(" • Jornada "+m.jornada):"")).trim())
-              : escapeHtml((m.bucket||"") + (m.date_label?(" • "+m.date_label):""))
-            }
-          </div>
+
+          ${type === "sport" ? `
+            <div class="solid"></div>
+            ${m.sede ? `<div class="line">📍 ${escapeHtml(m.sede)}</div>` : ``}
+            ${timeTriplet ? `<div class="line">🕒 <b>Hora</b>: ${escapeHtml(timeTriplet)}</div>` : (m.hora_original ? `<div class="line">🕒 <b>Hora</b>: ${escapeHtml(m.hora_original + (m.timezone ? (" " + m.timezone) : ""))}</div>` : ``)}
+            ${canalesTxt ? `<div class="line">📺 ${escapeHtml(canalesTxt)}</div>` : ``}
+          ` : `
+            ${flags ? `<div class="line">${escapeHtml(flags)}</div>` : ``}
+            <div class="line">${escapeHtml((m.date_label||"") ? ("🗓️ " + (m.date_label||"")) : "")}</div>
+          `}
         </div>
+
         <div class="actions">
-          <button class="star ${favOn?"on":""}" data-fav="${it._id}">${favOn?"★":"☆"}</button>
+          <button class="btn ${favOn?"on":""}" data-fav="${escapeHtml(it._id)}">${favIcon} ${favLabel}</button>
+          ${type === "sport" ? `
+            <button class="btn small ${ics5?"primary":"disabled"}" data-ics="${escapeHtml(it._id)}" data-mins="5" ${ics5?"":"disabled"}>⏰ 5 min</button>
+            <button class="btn small ${ics10?"primary":"disabled"}" data-ics="${escapeHtml(it._id)}" data-mins="10" ${ics10?"":"disabled"}>⏰ 10 min</button>
+            <button class="btn small ${ics15?"primary":"disabled"}" data-ics="${escapeHtml(it._id)}" data-mins="15" ${ics15?"":"disabled"}>⏰ 15 min</button>
+          ` : ``}
         </div>
 
         ${locked ? `
@@ -442,89 +511,100 @@
     `;
   }
 
-  function escapeHtml(s){
-    return (s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
-  }
-
   function render(){
     const arr = filterItems();
 
-    // Empty
     if(!arr.length){
       grid.innerHTML = `<div class="section"><h2>Sin resultados <span class="sub">— revisa tu búsqueda o espera al sync</span></h2></div>`;
-      bindStars();
+      bindActions();
       return;
     }
 
-    // Deportes agrupados
+    // Deportes
     if(TAB === "sports"){
       const groups = groupSports(arr);
       let html = "";
-      for(const [k, items] of groups.entries()){
-        html += `<div class="section"><h2>${escapeHtml(k)}</h2></div>`;
-        for(const it of items.slice(0,60)){
-          html += card(it);
-        }
+      for(const [comp, items] of groups.entries()){
+        html += `<div class="section"><h2>🏆 ${escapeHtml(comp)}</h2></div>`;
+        for(const it of items.slice(0,60)) html += card(it);
       }
       grid.innerHTML = html;
-      bindStars();
+      bindActions();
       return;
     }
 
-    // Pelis/series agrupadas (bucket->section->date)
-    if(TAB === "movies" || TAB === "series" || TAB === "all" || TAB === "favs"){
-      const vod = arr.filter(x => (x.meta && (x.meta.type==="movie" || x.meta.type==="series")) || (x.cat||"").includes("PEL") || (x.cat||"").includes("SERIES"));
-      const sports = arr.filter(x => x.meta && x.meta.type==="sport");
+    // Movies/Series/All/Favs
+    const vod = arr.filter(x => x.meta && (x.meta.type==="movie" || x.meta.type==="series"));
+    const sports = arr.filter(x => x.meta && x.meta.type==="sport");
 
-      let html = "";
+    let html = "";
 
-      // Si estamos en ALL o FAVS, primero deportes, luego VOD
-      if((TAB === "all" || TAB === "favs") && sports.length){
-        html += `<div class="section"><h2>Deportes <span class="sub">— filtrados</span></h2></div>`;
-        const groups = groupSports(sports);
-        for(const [k, items] of groups.entries()){
-          html += `<div class="section"><h2>${escapeHtml(k)}</h2></div>`;
-          for(const it of items.slice(0,30)) html += card(it);
-        }
+    if((TAB === "all" || TAB === "favs") && sports.length){
+      html += `<div class="section"><h2>Deportes <span class="sub">— filtrados</span></h2></div>`;
+      const groups = groupSports(sports);
+      for(const [comp, items] of groups.entries()){
+        html += `<div class="section"><h2>🏆 ${escapeHtml(comp)}</h2></div>`;
+        for(const it of items.slice(0,30)) html += card(it);
       }
+    }
 
-      if(vod.length){
-        const g = groupVOD(vod);
-        for(const [bucket, secMap] of g.entries()){
-          html += `<div class="section"><h2>${escapeHtml(bucket)}</h2></div>`;
-          for(const [section, dateMap] of secMap.entries()){
-            html += `<div class="section"><h2>📌 ${escapeHtml(section)}</h2></div>`;
-            for(const [date, items] of dateMap.entries()){
-              if(date){
-                html += `<div class="section"><h2><span class="sub">${escapeHtml(date)}</span></h2></div>`;
-              }
-              for(const it of items.slice(0,60)){
-                html += card(it);
-              }
-            }
+    if(vod.length){
+      // Si estamos en movies/series, filtramos por tipo aquí para mantener agrupación uniforme
+      const vod2 = (TAB==="movies") ? vod.filter(x=>x.meta.type==="movie") :
+                   (TAB==="series") ? vod.filter(x=>x.meta.type==="series") : vod;
+
+      const byDate = groupVOD(vod2);
+
+      // Orden: fechas no vacías primero, luego vacío
+      const dates = [...byDate.keys()].sort((a,b)=>{
+        if(!a && b) return 1;
+        if(a && !b) return -1;
+        return 0;
+      });
+
+      for(const date of dates){
+        const ssMap = byDate.get(date);
+        if(date){
+          html += `<div class="section"><h2><span class="sub">${escapeHtml(date.toUpperCase())}</span></h2></div>`;
+        }
+
+        // Orden sugerido
+        const ssOrder = ["Nuevas Peliculas", "Nuevas Series", "Nuevos Episodios"];
+        const ssKeys = [...ssMap.keys()];
+        const ordered = [...new Set([...ssOrder, ...ssKeys])].filter(x=>ssMap.has(x));
+
+        for(const ss of ordered){
+          html += `<div class="section"><h2>🎥 ${escapeHtml(ss.toUpperCase())}</h2></div>`;
+          const secMap = ssMap.get(ss);
+          for(const [sec, items] of secMap.entries()){
+            html += `<div class="section"><h2>✨ ${escapeHtml(sec)}<span class="sub">…</span></h2></div>`;
+            for(const it of items.slice(0,60)) html += card(it);
           }
         }
       }
-
-      grid.innerHTML = html;
-      bindStars();
-      return;
     }
 
-    // fallback
-    grid.innerHTML = arr.map(card).join("");
-    bindStars();
+    grid.innerHTML = html;
+    bindActions();
   }
 
-  function bindStars(){
+  function bindActions(){
     document.querySelectorAll("[data-fav]").forEach(btn=>{
       btn.addEventListener("click", ()=>{
-        toggleFav(btn.getAttribute("data-fav"));
+        const id = btn.getAttribute("data-fav");
+        if(id) toggleFav(id);
+      });
+    });
+    document.querySelectorAll("[data-ics]").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        if(btn.disabled) return;
+        const id = btn.getAttribute("data-ics");
+        const mins = parseInt(btn.getAttribute("data-mins")||"10", 10);
+        if(id) downloadIcs(id, mins);
       });
     });
   }
 
-  // Auto refresh 15 min
   fetchData();
   setInterval(fetchData, 15 * 60 * 1000);
 </script>
