@@ -57,9 +57,7 @@
     .pill.warn{border-color:rgba(255,191,47,.55);color:#fff6d8}
     .line{color:var(--muted);font-size:12px;line-height:1.35;word-break:break-word}
     .solid{height:1px;background:rgba(255,255,255,.15);margin:6px 0 8px 0}
-    
-  .thick{height:4px;background:rgba(255,255,255,.28);margin:10px 0 14px;border-radius:8px;}
-.light{height:1px;background:rgba(255,255,255,.08);margin:8px 0}
+    .light{height:1px;background:rgba(255,255,255,.08);margin:8px 0}
     .actions{display:flex;gap:8px;align-items:flex-end;justify-content:flex-end;flex-direction:column}
     .btn{
       border:1px solid var(--line);background:#0f0f18;color:#fff;border-radius:12px;
@@ -448,7 +446,6 @@
       const emoji = sportEmoji(it.cat||"", m.raw||"");
       const comp = (m.competition || "Deportes");
       pills.push(`${emoji} ${comp}`);
-      if(m.stage) pills.push(m.stage);
       if(m.jornada) pills.push(`Jornada ${m.jornada}`);
       if(m.is_live_now) pills.push("🔴 En Vivo");
     }else{
@@ -484,8 +481,6 @@
 
           ${type === "sport" ? `
             <div class="solid"></div>
-            ${m.stage ? `<div class="line">🧩 <b>Etapa</b>: ${escapeHtml(m.stage)}</div>` : ``}
-            ${m.global_score ? `<div class="line">🏁 <b>GLOBAL</b>: ${escapeHtml(m.global_score)}${m.global_leader ? (" " + escapeHtml(m.global_leader)) : ""}</div>` : ``}
             ${m.sede ? `<div class="line">📍 ${escapeHtml(m.sede)}</div>` : ``}
             ${timeTriplet ? `<div class="line">🕒 <b>Hora</b>: ${escapeHtml(timeTriplet)}</div>` : (m.hora_original ? `<div class="line">🕒 <b>Hora</b>: ${escapeHtml(m.hora_original + (m.timezone ? (" " + m.timezone) : ""))}</div>` : ``)}
             ${canalesTxt ? `<div class="line">📺 ${escapeHtml(canalesTxt)}</div>` : ``}
@@ -530,7 +525,7 @@
       const groups = groupSports(arr);
       let html = "";
       for(const [comp, items] of groups.entries()){
-        html += `<div class="section"><h2>🏆 ${escapeHtml(comp)}</h2><div class="thick"></div></div>`;
+        html += `<div class="section"><h2>🏆 ${escapeHtml(comp)}</h2></div>`;
         for(const it of items.slice(0,60)) html += card(it);
       }
       grid.innerHTML = html;
@@ -548,7 +543,7 @@
       html += `<div class="section"><h2>Deportes <span class="sub">— filtrados</span></h2></div>`;
       const groups = groupSports(sports);
       for(const [comp, items] of groups.entries()){
-        html += `<div class="section"><h2>🏆 ${escapeHtml(comp)}</h2><div class="thick"></div></div>`;
+        html += `<div class="section"><h2>🏆 ${escapeHtml(comp)}</h2></div>`;
         for(const it of items.slice(0,30)) html += card(it);
       }
     }
