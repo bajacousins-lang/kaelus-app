@@ -482,7 +482,7 @@
           ${type === "sport" ? `
             <div class="solid"></div>
             ${m.sede ? `<div class="line">📍 ${escapeHtml(m.sede)}</div>` : ``}
-            ${timeTriplet ? `<div class="line">🕒 <b>Hora</b>: ${escapeHtml(timeTriplet)}</div>` : (m.hora_original ? `<div class="line">🕒 <b>Hora</b>: ${escapeHtml(m.hora_original + (m.timezone ? (" " + m.timezone) : ""))}</div>` : ``)}
+            ${m.hora_text ? `<div class="line">🕒 <b>Hora</b>: ${escapeHtml(m.hora_text)}</div>` : (timeTriplet ? `<div class="line">🕒 <b>Hora</b>: ${escapeHtml(timeTriplet)}</div>` : (m.hora_original ? `<div class="line">🕒 <b>Hora</b>: ${escapeHtml(m.hora_original + (m.timezone ? (" " + m.timezone) : ""))}</div>` : ``))}
             ${canalesTxt ? `<div class="line">📺 ${escapeHtml(canalesTxt)}</div>` : ``}
           ` : `
             ${flags ? `<div class="line">${escapeHtml(flags)}</div>` : ``}
