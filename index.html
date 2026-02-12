@@ -446,7 +446,11 @@
       const emoji = sportEmoji(it.cat||"", m.raw||"");
       const comp = (m.competition || "Deportes");
       pills.push(`${emoji} ${comp}`);
-      if(m.jornada) pills.push(`Jornada ${m.jornada}`);
+      if(m.ronda) pills.push(String(m.ronda));
+      if(m.jornada){
+        const j = String(m.jornada);
+        pills.push(safeLower(j).includes("jornada") ? j : `Jornada ${j}`);
+      }
       if(m.is_live_now) pills.push("🔴 En Vivo");
     }else{
       if(it.cat) pills.push(it.cat);
@@ -457,7 +461,11 @@
     }
 
     const canales = Array.isArray(m.canales) ? m.canales : (m.canal ? [m.canal] : []);
-    const canalesTxt = canales.length ? canales.join(", ") : "";
+    let canalesTxt = canales.length ? canales.join(", ") : "";
+    if(type === "sport" && m.categoria){
+      const cat = String(m.categoria);
+      canalesTxt = canalesTxt ? (canalesTxt + ` y Categoría ${cat}`) : (`Categoría ${cat}`);
+    }
     const timeTriplet = (type === "sport" && m.start_utc) ? fmtTimeTriplet(m.start_utc) : null;
 
     const ics5 = canUseIcs(m, 5);
@@ -481,6 +489,9 @@
 
           ${type === "sport" ? `
             <div class="solid"></div>
+            ${m.ronda ? `<div class="line">🗓️ ${escapeHtml(m.ronda)}</div>` : ``}
+            ${m.jornada ? `<div class="line">🗓️ ${escapeHtml(m.jornada)}</div>` : ``}
+            ${m.global ? `<div class="line">🧩 ${escapeHtml(m.global)}</div>` : ``}
             ${m.sede ? `<div class="line">📍 ${escapeHtml(m.sede)}</div>` : ``}
             ${m.hora_text ? `<div class="line">🕒 <b>Hora</b>: ${escapeHtml(m.hora_text)}</div>` : (timeTriplet ? `<div class="line">🕒 <b>Hora</b>: ${escapeHtml(timeTriplet)}</div>` : (m.hora_original ? `<div class="line">🕒 <b>Hora</b>: ${escapeHtml(m.hora_original + (m.timezone ? (" " + m.timezone) : ""))}</div>` : ``))}
             ${canalesTxt ? `<div class="line">📺 ${escapeHtml(canalesTxt)}</div>` : ``}
