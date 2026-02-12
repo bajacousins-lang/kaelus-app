@@ -335,7 +335,7 @@
       arr = arr.filter(x => (x.meta && x.meta.type === "series") || (x.cat||"").includes("SERIES"));
     }
     if(TAB === "favs"){
-      arr = arr.filter(x => isFav(x._id));
+      arr = arr.filter(x => isFav(itemId(x)));
     }
 
     if(term) arr = arr.filter(x => textOfItem(x).includes(term));
@@ -434,7 +434,9 @@
     const isVipItem = !!m.is_vip;
     const locked = isVipItem && !VIP && (vipFilter.value === "show_locked");
 
-    const favOn = isFav(it._id);
+    const iid = itemId(it);
+
+    const favOn = isFav(iid);
     const favLabel = favOn ? "Quitar de favoritos" : "Agregar a favoritos";
     const favIcon = favOn ? "★" : "☆";
 
@@ -502,11 +504,11 @@
         </div>
 
         <div class="actions">
-          <button class="btn ${favOn?"on":""}" data-fav="${escapeHtml(it._id)}">${favIcon} ${favLabel}</button>
+          <button class="btn ${favOn?"on":""}" data-fav="${escapeHtml(iid)}">${favIcon} ${favLabel}</button>
           ${type === "sport" ? `
-            <button class="btn small ${ics5?"primary":"disabled"}" data-ics="${escapeHtml(it._id)}" data-mins="5" ${ics5?"":"disabled"}>⏰ 5 min</button>
-            <button class="btn small ${ics10?"primary":"disabled"}" data-ics="${escapeHtml(it._id)}" data-mins="10" ${ics10?"":"disabled"}>⏰ 10 min</button>
-            <button class="btn small ${ics15?"primary":"disabled"}" data-ics="${escapeHtml(it._id)}" data-mins="15" ${ics15?"":"disabled"}>⏰ 15 min</button>
+            <button class="btn small ${ics5?"primary":"disabled"}" data-ics="${escapeHtml(iid)}" data-mins="5" ${ics5?"":"disabled"}>⏰ 5 min</button>
+            <button class="btn small ${ics10?"primary":"disabled"}" data-ics="${escapeHtml(iid)}" data-mins="10" ${ics10?"":"disabled"}>⏰ 10 min</button>
+            <button class="btn small ${ics15?"primary":"disabled"}" data-ics="${escapeHtml(iid)}" data-mins="15" ${ics15?"":"disabled"}>⏰ 15 min</button>
           ` : ``}
         </div>
 
