@@ -478,7 +478,7 @@
       <div class="card">
         <img class="poster" loading="lazy" src="${escapeHtml(it.img || "./logo.png")}" alt="img" onerror="this.src='./logo.png'"/>
         <div class="meta">
-          <p class="t">${escapeHtml(it.t || "")}</p>
+          ${type === "sport" ? `<p class="t"><b>${escapeHtml(it.t || "")}</b></p>` : `<p class="t">${escapeHtml(it.t || "")}</p>`}
 
           <div>
             ${pills.slice(0,4).map(x=>{
@@ -489,12 +489,12 @@
 
           ${type === "sport" ? `
             <div class="solid"></div>
-            ${m.ronda ? `<div class="line">🗓️ ${escapeHtml(m.ronda)}</div>` : ``}
-            ${m.jornada ? `<div class="line">🗓️ ${escapeHtml(m.jornada)}</div>` : ``}
-            ${m.global ? `<div class="line">🧩 ${escapeHtml(m.global)}</div>` : ``}
+            ${m.ronda ? `<div class="line">🗓️ <b>${escapeHtml(m.ronda)}</b></div>` : ``}
+            ${m.jornada ? `<div class="line">🗓️ <b>${escapeHtml(m.jornada)}</b></div>` : ``}
+            ${m.global ? `<div class="line">🧩 <b>${escapeHtml(m.global)}</b></div>` : ``}
             ${m.sede ? `<div class="line">📍 ${escapeHtml(m.sede)}</div>` : ``}
-            ${m.hora_text ? `<div class="line">🕒 <b>Hora</b>: ${escapeHtml(m.hora_text)}</div>` : (timeTriplet ? `<div class="line">🕒 <b>Hora</b>: ${escapeHtml(timeTriplet)}</div>` : (m.hora_original ? `<div class="line">🕒 <b>Hora</b>: ${escapeHtml(m.hora_original + (m.timezone ? (" " + m.timezone) : ""))}</div>` : ``))}
-            ${canalesTxt ? `<div class="line">📺 ${escapeHtml(canalesTxt)}</div>` : ``}
+            ${m.hora_text ? `<div class="line">🕒 <b>Horario</b>: ${escapeHtml(m.hora_text)}</div>` : (timeTriplet ? `<div class="line">🕒 <b>Horario</b>: ${escapeHtml(timeTriplet)}</div>` : (m.hora_original ? `<div class="line">🕒 <b>Horario</b>: ${escapeHtml(m.hora_original + (m.timezone ? (" " + m.timezone) : ""))}</div>` : ``))}
+            ${canalesTxt ? `<div class="line">📺: ${escapeHtml(canalesTxt)}</div>` : ``}
           ` : `
             ${flags ? `<div class="line">${escapeHtml(flags)}</div>` : ``}
             <div class="line">${escapeHtml((m.date_label||"") ? ("🗓️ " + (m.date_label||"")) : "")}</div>
