@@ -425,7 +425,8 @@
     const r = safeLower(raw);
     if(c.includes("golf") || r.includes("pga") || r.includes("liv golf") || r.includes("ryder") || r.includes("masters")) return "⛳";
     if(c.includes("grand") || r.includes("wimbledon") || r.includes("roland") || r.includes("australian open") || r.includes("us open") || r.includes("atp") || r.includes("wta")) return "🎾";
-    if(c.includes("combate") || r.includes("ufc") || r.includes("wwe") || r.includes("box") || r.includes("boxeo") || r.includes("bellator")) return "🥊";
+        if(c.includes("softball") || c.includes("softbol") || r.includes("softball") || r.includes("softbol")) return "🥎";
+if(c.includes("combate") || r.includes("ufc") || r.includes("wwe") || r.includes("box") || r.includes("boxeo") || r.includes("bellator")) return "🥊";
     return "⚽";
   }
 
