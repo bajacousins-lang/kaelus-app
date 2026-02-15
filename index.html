@@ -423,10 +423,15 @@
   function sportEmoji(cat, raw){
     const c = safeLower(cat);
     const r = safeLower(raw);
+
+    if(r.includes("nascar")) return "🏎️";
+    if(r.includes("rugby")) return "🏉";
+    if(r.includes("wrestling") || r.includes("aew") || r.includes("wwe")) return "🤼‍♂️";
+
     if(c.includes("golf") || r.includes("pga") || r.includes("liv golf") || r.includes("ryder") || r.includes("masters")) return "⛳";
     if(c.includes("grand") || r.includes("wimbledon") || r.includes("roland") || r.includes("australian open") || r.includes("us open") || r.includes("atp") || r.includes("wta")) return "🎾";
-        if(c.includes("softball") || c.includes("softbol") || r.includes("softball") || r.includes("softbol")) return "🥎";
-if(c.includes("combate") || r.includes("ufc") || r.includes("wwe") || r.includes("box") || r.includes("boxeo") || r.includes("bellator")) return "🥊";
+    if(c.includes("softball") || c.includes("softbol") || r.includes("softball") || r.includes("softbol")) return "🥎";
+    if(c.includes("combate") || r.includes("ufc") || r.includes("box") || r.includes("boxeo") || r.includes("bellator")) return "🥊";
     return "⚽";
   }
 
@@ -481,7 +486,7 @@ if(c.includes("combate") || r.includes("ufc") || r.includes("wwe") || r.includes
       <div class="card">
         <img class="poster" loading="lazy" src="${escapeHtml(it.img || "./logo.png")}" alt="img" onerror="this.src='./logo.png'"/>
         <div class="meta">
-          ${type === "sport" ? `<p class="t"><b>${escapeHtml(it.t || "")}</b></p>` : `<p class="t">${escapeHtml(it.t || "")}</p>`}
+          ${type === "sport" ? `<p class="t"><b>📣 ${escapeHtml(it.t || "")}</b></p>` : `<p class="t">${escapeHtml(it.t || "")}</p>`}
 
           <div>
             ${pills.slice(0,4).map(x=>{
