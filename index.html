@@ -119,6 +119,7 @@
         <option value="">Subfiltro deportes: Todos</option>
         <option value="LaLiga">LaLiga</option>
         <option value="Liga MX">Liga MX</option>
+        <option value="SOFTBOL">Softbol</option>
         <option value="COMBATE">Combate</option>
         <option value="GRAND">Tenis/Grand Slams</option>
         <option value="GOLF">Golf</option>
@@ -323,6 +324,12 @@
       const sub = sportsSub.value;
       if(sub){
         if(sub === "COMBATE") arr = arr.filter(x => (x.cat||"").includes("COMBATE"));
+        else if(sub === "SOFTBOL") arr = arr.filter(x => {
+          const m = x.meta || {};
+          const comp = (m.competition||"").toLowerCase();
+          const raw = (m.raw||"").toLowerCase();
+          return (m.sport_kind === "softball") || comp.includes("soft") || raw.includes("softbol") || raw.includes("softball") || (x.cat||"").includes("🥎");
+        });
         else if(sub === "GRAND") arr = arr.filter(x => (x.cat||"").includes("GRAND"));
         else if(sub === "GOLF") arr = arr.filter(x => (x.cat||"").includes("GOLF"));
         else arr = arr.filter(x => (x.meta && x.meta.competition === sub) || (x.cat||"").includes(sub));
