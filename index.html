@@ -294,11 +294,54 @@
 
   function safeLower(s){ return (s||"").toLowerCase(); }
 
+  function escapeRegExp(s){
+    return (s||"").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  function buildCanalesTxt(m, type){
+    const canales0 = Array.isArray(m.canales) ? m.canales : (m.canal ? [m.canal] : []);
+    let cat = (type === "sport") ? String(m.categoria||"").trim() : "";
+    const clean = [];
+    for(const c of canales0){
+      let s = String(c||"").trim();
+      if(!s) continue;
+      s = s.replace(/\s+/g, " ");
+      if(/^y$/i.test(s)) continue;
+      const mm = s.match(/^(?:y\s+)?(?:por\s+)?categor[ií]a\s*(.+)$/i);
+      if(mm){
+        const cand = (mm[1]||"").trim();
+        if(!cat && cand) cat = cand;
+        continue;
+      }
+      clean.push(s);
+    }
+    // dedupe preservando orden
+    const seen = new Set();
+    const uniq = [];
+    for(const s of clean){
+      const k = s.toLowerCase();
+      if(seen.has(k)) continue;
+      seen.add(k);
+      uniq.push(s);
+    }
+    let canalesTxt = uniq.length ? uniq.join(", ") : "";
+    if(type === "sport" && cat){
+      const re = new RegExp("\\bcategor[ií]a\\s+" + escapeRegExp(cat) + "\\b","i");
+      if(!re.test(canalesTxt)){
+        canalesTxt = canalesTxt.replace(/\s+y\s*$/i, "").trim();
+        canalesTxt = canalesTxt ? (canalesTxt + ` y por Categoría ${cat}`) : (`Por Categoría ${cat}`);
+      }
+    }
+    canalesTxt = canalesTxt.replace(/\by\s+y\b/ig, "y");
+    return canalesTxt;
+  }
+
   function textOfItem(it){
     const t = (it.t||"");
     const cat = (it.cat||"");
     const m = it.meta||{};
-    const canales = Array.isArray(m.canales) ? m.canales.join(" ") : (m.canal||"");
+    const isSport = !!(m.competition || m.hora_text || m.start_utc || m.categoria);
+    const canales = buildCanalesTxt(m, isSport ? "sport" : "media");
     return (t+" "+cat+" "+canales+" "+(m.sede||"")+" "+(m.competition||"")+" "+(m.jornada||"")+" "+(m.section||"")+" "+(m.super_section||"")+" "+(m.date_label||"")).toLowerCase();
   }
 
@@ -470,12 +513,7 @@
       if(m.quality) pills.push(m.quality);
     }
 
-    const canales = Array.isArray(m.canales) ? m.canales : (m.canal ? [m.canal] : []);
-    let canalesTxt = canales.length ? canales.join(", ") : "";
-    if(type === "sport" && m.categoria){
-      const cat = String(m.categoria);
-      canalesTxt = canalesTxt ? (canalesTxt + ` y Categoría ${cat}`) : (`Categoría ${cat}`);
-    }
+    const canalesTxt = buildCanalesTxt(m, type);
     const timeTriplet = (type === "sport" && m.start_utc) ? fmtTimeTriplet(m.start_utc) : null;
 
     const ics5 = canUseIcs(m, 5);
