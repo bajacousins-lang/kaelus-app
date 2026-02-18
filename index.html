@@ -82,7 +82,9 @@
     }
     .lock .box h4{margin:0 0 6px 0;font-size:14px}
     .lock .box p{margin:0;color:#e8e8f2;font-size:12px;line-height:1.35}
-  </style>
+  
+    .megaphone{color:var(--muted); margin-right:6px}
+</style>
 </head>
 <body>
 <header>
@@ -486,7 +488,7 @@
       <div class="card">
         <img class="poster" loading="lazy" src="${escapeHtml(it.img || "./logo.png")}" alt="img" onerror="this.src='./logo.png'"/>
         <div class="meta">
-          ${type === "sport" ? `<p class="t"><b>📣 ${escapeHtml(it.t || "")}</b></p>` : `<p class="t">${escapeHtml(it.t || "")}</p>`}
+          ${type === "sport" ? `<p class="t"><b><span class="megaphone">📣︎</span> ${escapeHtml(it.t || "")}</b></p>` : `<p class="t">${escapeHtml(it.t || "")}</p>`}
 
           <div>
             ${pills.slice(0,4).map(x=>{
