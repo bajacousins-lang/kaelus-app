@@ -480,7 +480,17 @@
     return "⚽";
   }
 
-  function card(it){
+  
+  function cleanMediaDateLabel(dl){
+    dl = (dl||"").toString().trim();
+    const m = dl.match(/(\d{4})\s*$/);
+    if(!m) return dl;
+    const y = parseInt(m[1],10);
+    if(!Number.isFinite(y)) return "";
+    return (y >= 2024) ? dl : "";
+  }
+
+function card(it){
     const m = it.meta || {};
     const isVipItem = !!m.is_vip;
     const locked = isVipItem && !VIP && (vipFilter.value === "show_locked");
@@ -521,6 +531,7 @@
     const ics15 = canUseIcs(m, 15);
 
     const flags = (Array.isArray(m.flags) && m.flags.length) ? m.flags.join(" ") : "";
+    const dateLabel = cleanMediaDateLabel(m.date_label);
 
     return `
       <div class="card">
@@ -545,7 +556,7 @@
             ${canalesTxt ? `<div class="line">📺: ${escapeHtml(canalesTxt)}</div>` : ``}
           ` : `
             ${flags ? `<div class="line">${escapeHtml(flags)}</div>` : ``}
-            <div class="line">${escapeHtml((m.date_label||"") ? ("🗓️ " + (m.date_label||"")) : "")}</div>
+            <div class="line">${escapeHtml(dateLabel ? ("🗓️ " + dateLabel) : "")}</div>
           `}
         </div>
 
