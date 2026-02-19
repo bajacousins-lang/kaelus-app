@@ -643,16 +643,28 @@ function card(it){
 
       // Orden: fechas no vacías primero, luego vacío
             function dateSortKey(lbl){
-        const up = (lbl||"").trim().toUpperCase();
-        const m = up.match(/^(\d{2})\s+DE\s+([A-ZÁÉÍÓÚÑ]+)\s+DE\s+(\d{4})$/);
-        if(!m) return [9999,99,99, up];
-        const dd = +m[1], mes = m[2], yyyy = +m[3];
-        const months = ["ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO","JULIO","AGOSTO","SEPTIEMBRE","SETIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE"];
+        const up0 = (lbl||"").trim().toUpperCase();
+        // Soporta: 18 DE FEBRERO DE 2026 | 18 DE FEBRERO DEL 2026 | MIERCOLES 18 DE FEBRERO DEL 2026 | FECHA: ...
+        let up = up0.replace(/^\s*FECHA\s*:\s*/i, "").trim().replace(/\s{2,}/g, " ");
+
+        // Quita día de semana si existe
+        const dow = ["LUNES","MARTES","MIERCOLES","MIÉRCOLES","JUEVES","VIERNES","SABADO","SÁBADO","DOMINGO"];
+        for(const d of dow){
+          if(up.startsWith(d + " ")){
+            up = up.slice(d.length).trim();
+            break;
+          }
+        }
+
+        const m = up.match(/^(\d{1,2})\s+DE\s+([A-ZÁÉÍÓÚÑ]+)\s+(?:DE|DEL)\s+(\d{4})$/);
+        if(!m) return [9999,99,99, up0];
+        const dd = +m[1], mes = (m[2]||"").toUpperCase().replace("SETIEMBRE","SEPTIEMBRE"), yyyy = +m[3];
+        const months = ["ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO","JULIO","AGOSTO","SEPTIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE"];
         const mm = months.indexOf(mes) >= 0 ? (months.indexOf(mes)+1) : 99;
-        return [-yyyy,-mm,-dd, up];
+        return [-yyyy,-mm,-dd, up0];
       }
 
-const dates = [...byDate.keys()].sort((a,b)=>{
+const datesAll = [...byDate.keys()].sort((a,b)=>{
         if(!a && b) return 1;
         if(a && !b) return -1;
         const ka = dateSortKey(a);
@@ -664,10 +676,13 @@ const dates = [...byDate.keys()].sort((a,b)=>{
         return 0;
       });
 
+      // Solo 2 fechas más recientes (como en el bot)
+      const dates = datesAll.filter(d=>d).slice(0,2);
+
       for(const date of dates){
         const ssMap = byDate.get(date);
         if(date){
-          html += `<div class="section"><h2><span class="sub">${escapeHtml(date.toUpperCase())}</span></h2></div>`;
+          html += `<div class="section"><h2><span class="sub">🗓️ FECHA: ${escapeHtml(date.toUpperCase())}</span></h2></div>`;
         }
 
         // Orden sugerido
