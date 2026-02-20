@@ -642,23 +642,10 @@ function card(it){
       const byDate = groupVOD(vod2);
 
       // Orden: fechas no vacías primero, luego vacío
-            
-      function todayLabelEs(){
-        const d = new Date();
-        const dd = String(d.getDate()).padStart(2,"0");
-        const months = ["ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO","JULIO","AGOSTO","SEPTIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE"];
-        return `${dd} DE ${months[d.getMonth()]} DE ${d.getFullYear()}`;
-      }
-
-function dateSortKey(lbl){
+            function dateSortKey(lbl){
         const up0 = (lbl||"").trim().toUpperCase();
         // Soporta: 18 DE FEBRERO DE 2026 | 18 DE FEBRERO DEL 2026 | MIERCOLES 18 DE FEBRERO DEL 2026 | FECHA: ...
         let up = up0.replace(/^\s*FECHA\s*:\s*/i, "").trim().replace(/\s{2,}/g, " ");
-
-        // Quita marcador "Contenido Nuevo" si aparece
-        up = up.replace(/^\s*CONTENIDO\s+NUEVO\s*[:\-]?\s*/i, "").trim();
-        if(!up) up = todayLabelEs();
-
 
         // Quita día de semana si existe
         const dow = ["LUNES","MARTES","MIERCOLES","MIÉRCOLES","JUEVES","VIERNES","SABADO","SÁBADO","DOMINGO"];
@@ -695,11 +682,11 @@ const datesAll = [...byDate.keys()].sort((a,b)=>{
       for(const date of dates){
         const ssMap = byDate.get(date);
         if(date){
-          html += `<div class="section"><h2><span class="sub">🗓️ FECHA: ${escapeHtml((/CONTENIDO\s+NUEVO/i.test(date||"") ? todayLabelEs() : date).toUpperCase())}</span></h2></div>`;
+          html += `<div class="section"><h2><span class="sub">🗓️ FECHA: ${escapeHtml(date.toUpperCase())}</span></h2></div>`;
         }
 
         // Orden sugerido
-        const ssOrder = ["Nuevas Peliculas", "Nuevas Series", "Nuevos Episodios"];
+        const ssOrder = ["Nuevas Peliculas", "Nuevas Series", "Nuevos Capitulos"];
         const ssKeys = [...ssMap.keys()];
         const ordered = [...new Set([...ssOrder, ...ssKeys])].filter(x=>ssMap.has(x));
 
