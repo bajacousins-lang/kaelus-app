@@ -426,7 +426,14 @@
       const blocks = ssMap.get(superS);
 
       const last = blocks.length ? blocks[blocks.length-1] : null;
-      if(!last || last.grp !== grp){
+      const secLow = (sec||"").trim().toLowerCase();
+      const lastSecLow = last ? (last.sec||"").trim().toLowerCase() : "";
+
+      // Dedup suave: si por ruido del feed se generan varios bloques consecutivos de "Novedades",
+      // los colapsamos en uno (el Wix no siempre imprime ese género más de 1 vez).
+      if(last && last.grp !== grp && secLow === "novedades" && lastSecLow === "novedades"){
+        last.items.push(it);
+      }else if(!last || last.grp !== grp){
         blocks.push({grp, sec, items:[it]});
       }else{
         last.items.push(it);
