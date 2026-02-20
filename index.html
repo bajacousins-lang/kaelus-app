@@ -412,7 +412,10 @@
     for(const it of sorted){
       const m = it.meta||{};
       const date = (m.date_label || "").trim();
-      const superS = (m.super_section || (m.type==="series" ? "Nuevas Series" : "Nuevas Peliculas")).trim();
+      let superS = (m.super_section || (m.type==="series" ? "Nuevas Series" : "Nuevas Peliculas")).trim();
+      // Normaliza: "Nuevos Capitulos" / "Nuevos Capítulos" / "Nuevos Episodios"
+      if(/episod/i.test(superS) || /cap[ií]t/i.test(superS)) superS = "Nuevos Episodios";
+      else superS = (m.type==="series") ? "Nuevas Series" : "Nuevas Peliculas";
       const sec = (m.section || "Novedades").trim();
       const grp = (m.section_group || "").trim() || `${date}|${superS}|${sec}`;
 
@@ -655,6 +658,8 @@ function card(it){
             break;
           }
         }
+        // Quita basura al final (puntos, comas, etc.)
+        up = up.replace(/[^0-9A-ZÁÉÍÓÚÑ\s]+$/g, "").trim().replace(/\s{2,}/g, " ");
 
         const m = up.match(/^(\d{1,2})\s+DE\s+([A-ZÁÉÍÓÚÑ]+)\s+(?:DE|DEL)\s+(\d{4})$/);
         if(!m) return [9999,99,99, up0];
@@ -686,7 +691,7 @@ const datesAll = [...byDate.keys()].sort((a,b)=>{
         }
 
         // Orden sugerido
-        const ssOrder = ["Nuevas Peliculas", "Nuevas Series", "Nuevos Capitulos"];
+        const ssOrder = ["Nuevas Peliculas", "Nuevas Series", "Nuevos Episodios"];
         const ssKeys = [...ssMap.keys()];
         const ordered = [...new Set([...ssOrder, ...ssKeys])].filter(x=>ssMap.has(x));
 
