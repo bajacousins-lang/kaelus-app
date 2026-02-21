@@ -409,34 +409,30 @@
       return ao - bo;
     });
 
+    // Agrupa por: fecha -> super_section -> género (sin repetir encabezados)
     for(const it of sorted){
       const m = it.meta||{};
       const date = (m.date_label || "").trim();
       let superS = (m.super_section || (m.type==="series" ? "Nuevas Series" : "Nuevas Peliculas")).trim();
-      // Normaliza: "Nuevos Capitulos" / "Nuevos Capítulos" / "Nuevos Episodios"
       if(/episod/i.test(superS) || /cap[ií]t/i.test(superS)) superS = "Nuevos Episodios";
       else superS = (m.type==="series") ? "Nuevas Series" : "Nuevas Peliculas";
-      const sec = (m.section || "Novedades").trim();
-      const grp = (m.section_group || "").trim() || `${date}|${superS}|${sec}`;
+
+      const sec = (m.section || "Novedades").trim() || "Novedades";
 
       if(!out.has(date)) out.set(date, new Map());
       const ssMap = out.get(date);
 
-      if(!ssMap.has(superS)) ssMap.set(superS, []);
-      const blocks = ssMap.get(superS);
+      if(!ssMap.has(superS)) ssMap.set(superS, new Map());
+      const secMap = ssMap.get(superS);
 
-      const last = blocks.length ? blocks[blocks.length-1] : null;
-      const secLow = (sec||"").trim().toLowerCase();
-      const lastSecLow = last ? (last.sec||"").trim().toLowerCase() : "";
+      if(!secMap.has(sec)) secMap.set(sec, {sec, items:[]});
+      secMap.get(sec).items.push(it);
+    }
 
-      // Dedup suave: si por ruido del feed se generan varios bloques consecutivos de "Novedades",
-      // los colapsamos en uno (el Wix no siempre imprime ese género más de 1 vez).
-      if(last && last.grp !== grp && secLow === "novedades" && lastSecLow === "novedades"){
-        last.items.push(it);
-      }else if(!last || last.grp !== grp){
-        blocks.push({grp, sec, items:[it]});
-      }else{
-        last.items.push(it);
+    // Convierte los mapas internos a arrays (preservan orden de inserción)
+    for(const [date, ssMap] of out.entries()){
+      for(const [ss, secMap] of ssMap.entries()){
+        ssMap.set(ss, [...secMap.values()]);
       }
     }
     return out;
