@@ -13,7 +13,7 @@
     *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
     header{position:sticky;top:0;background:rgba(11,11,15,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:5}
-    .wrap{max-width:1100px;margin:0 auto;padding:14px}
+    .wrap{max-width:1320px;margin:0 auto;padding:14px 16px}
     .top{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
     .brand{display:flex;gap:10px;align-items:center}
     .logo{width:34px;height:34px;border-radius:10px;background:#111;object-fit:cover;border:1px solid var(--line)}
@@ -43,22 +43,40 @@
     .section h2 .sub{color:var(--muted);font-weight:650}
     .card{
       grid-column:span 12;background:var(--card);border:1px solid var(--line);border-radius:18px;
-      overflow:hidden;display:flex;gap:12px;padding:12px;
-      position:relative;
+      overflow:hidden;padding:12px;position:relative;
+
+      display:grid;
+      grid-template-columns:96px 1fr;
+      grid-template-areas:
+        "poster meta"
+        "actions actions";
+      gap:12px;
+      align-items:start;
     }
     @media(min-width:720px){ .card{grid-column:span 6} }
     @media(min-width:980px){ .card{grid-column:span 4} }
+    @media(max-width:520px){
+      .card{
+        grid-template-columns:1fr;
+        grid-template-areas:
+          "poster"
+          "meta"
+          "actions";
+      }
+      .poster{width:100%;height:190px}
+      .actions{justify-content:flex-start}
+    }
 
-    .poster{width:86px;height:124px;border-radius:14px;border:1px solid var(--line);background:#0f0f18;object-fit:cover}
-    .meta{flex:1;min-width:0}
-    .t{font-weight:900;margin:0 0 6px 0;font-size:14px}
+    .poster{grid-area:poster;width:96px;height:136px;border-radius:14px;border:1px solid var(--line);background:#0f0f18;object-fit:cover}
+    .meta{grid-area:meta;min-width:0}
+    .t{font-weight:900;margin:0 0 6px 0;font-size:15px;line-height:1.25}
     .pill{display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--muted);font-size:12px;margin-right:6px;margin-bottom:6px}
     .pill.live{border-color:rgba(24,210,107,.5);color:#eafff3}
     .pill.warn{border-color:rgba(255,191,47,.55);color:#fff6d8}
     .line{color:var(--muted);font-size:12px;line-height:1.35;word-break:break-word}
     .solid{height:1px;background:rgba(255,255,255,.15);margin:6px 0 8px 0}
     .light{height:1px;background:rgba(255,255,255,.08);margin:8px 0}
-    .actions{display:flex;gap:8px;align-items:flex-end;justify-content:flex-end;flex-direction:column}
+    .actions{grid-area:actions;display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-direction:row;flex-wrap:wrap}
     .btn{
       border:1px solid var(--line);background:#0f0f18;color:#fff;border-radius:12px;
       padding:9px 10px;cursor:pointer;font-weight:900;font-size:12px;white-space:nowrap
@@ -317,6 +335,258 @@
   }
 
 
+  // ===== Imágenes (placeholders + posters Zuplo) =====
+  function svgDataUri(svg){
+    return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(String(svg||"").trim());
+  }
+
+  // Placeholders (evitan usar el logo)
+  const IMG_PLACEHOLDER_MOVIE = svgDataUri(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
+      <defs>
+        <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stop-color="#141420"/>
+          <stop offset="1" stop-color="#0f0f18"/>
+        </linearGradient>
+      </defs>
+      <rect width="420" height="280" rx="28" fill="url(#g)"/>
+      <rect x="34" y="34" width="352" height="212" rx="18" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.10)"/>
+      <path d="M170 110h80v60h-80z" fill="rgba(255,255,255,.08)"/>
+      <path d="M172 113l75 27-75 27z" fill="rgba(255,255,255,.22)"/>
+      <text x="210" y="235" text-anchor="middle" font-family="system-ui,Segoe UI,Roboto,Arial" font-size="20" fill="rgba(255,255,255,.55)">PELÍCULA</text>
+    </svg>
+  `);
+
+  const IMG_PLACEHOLDER_SERIES = svgDataUri(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
+      <defs>
+        <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stop-color="#141420"/>
+          <stop offset="1" stop-color="#0f0f18"/>
+        </linearGradient>
+      </defs>
+      <rect width="420" height="280" rx="28" fill="url(#g)"/>
+      <rect x="44" y="52" width="332" height="176" rx="18" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.10)"/>
+      <rect x="64" y="78" width="292" height="126" rx="14" fill="rgba(255,255,255,.06)"/>
+      <path d="M190 115h60v48h-60z" fill="rgba(255,255,255,.10)"/>
+      <path d="M192 118l56 21-56 21z" fill="rgba(255,255,255,.24)"/>
+      <text x="210" y="245" text-anchor="middle" font-family="system-ui,Segoe UI,Roboto,Arial" font-size="20" fill="rgba(255,255,255,.55)">SERIE</text>
+    </svg>
+  `);
+
+  const IMG_PLACEHOLDER_SPORT = svgDataUri(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
+      <defs>
+        <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stop-color="#141420"/>
+          <stop offset="1" stop-color="#0f0f18"/>
+        </linearGradient>
+      </defs>
+      <rect width="420" height="280" rx="28" fill="url(#g)"/>
+      <circle cx="210" cy="135" r="64" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.12)" stroke-width="8"/>
+      <path d="M210 76c22 10 38 30 38 59s-16 49-38 59c-22-10-38-30-38-59s16-49 38-59z" fill="rgba(255,255,255,.10)"/>
+      <text x="210" y="235" text-anchor="middle" font-family="system-ui,Segoe UI,Roboto,Arial" font-size="20" fill="rgba(255,255,255,.55)">DEPORTE</text>
+    </svg>
+  `);
+
+  // Ilustraciones simples por deporte (evitan logos por canal)
+  const SPORT_ILLUSTRATIONS = {
+    soccer: svgDataUri(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
+        <rect width="420" height="280" rx="28" fill="#0f0f18"/>
+        <rect x="34" y="34" width="352" height="212" rx="18" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.10)"/>
+        <circle cx="210" cy="140" r="64" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.18)" stroke-width="10"/>
+        <path d="M210 98l32 24-12 38h-40l-12-38z" fill="rgba(255,255,255,.18)"/>
+        <path d="M178 122l-22 18 10 30 24-10m76-38l22 18-10 30-24-10" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `),
+    basketball: svgDataUri(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
+        <rect width="420" height="280" rx="28" fill="#0f0f18"/>
+        <circle cx="210" cy="140" r="78" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.18)" stroke-width="10"/>
+        <path d="M210 62v156M132 140h156" stroke="rgba(255,255,255,.22)" stroke-width="10" stroke-linecap="round"/>
+        <path d="M165 75c35 30 35 120 0 150M255 75c-35 30-35 120 0 150" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="10" stroke-linecap="round"/>
+      </svg>
+    `),
+    football: svgDataUri(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
+        <rect width="420" height="280" rx="28" fill="#0f0f18"/>
+        <ellipse cx="210" cy="140" rx="112" ry="72" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.18)" stroke-width="10"/>
+        <path d="M140 140h140" stroke="rgba(255,255,255,.20)" stroke-width="10" stroke-linecap="round"/>
+        <path d="M190 120h40v40h-40z" fill="rgba(255,255,255,.12)"/>
+        <path d="M190 140h40" stroke="rgba(255,255,255,.24)" stroke-width="8" stroke-linecap="round"/>
+        <path d="M202 132v16M218 132v16" stroke="rgba(255,255,255,.24)" stroke-width="6" stroke-linecap="round"/>
+      </svg>
+    `),
+    baseball: svgDataUri(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
+        <rect width="420" height="280" rx="28" fill="#0f0f18"/>
+        <circle cx="210" cy="140" r="78" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.18)" stroke-width="10"/>
+        <path d="M165 88c22 18 22 86 0 104M255 88c-22 18-22 86 0 104" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="10" stroke-linecap="round"/>
+        <path d="M182 110c10 6 10 54 0 60M238 110c-10 6-10 54 0 60" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="8" stroke-linecap="round"/>
+      </svg>
+    `),
+    tennis: svgDataUri(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
+        <rect width="420" height="280" rx="28" fill="#0f0f18"/>
+        <circle cx="210" cy="140" r="74" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.18)" stroke-width="10"/>
+        <path d="M148 120c32 0 48 18 48 44s-16 44-48 44" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="10" stroke-linecap="round"/>
+        <path d="M272 120c-32 0-48 18-48 44s16 44 48 44" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="10" stroke-linecap="round"/>
+      </svg>
+    `),
+    golf: svgDataUri(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
+        <rect width="420" height="280" rx="28" fill="#0f0f18"/>
+        <path d="M135 210h170" stroke="rgba(255,255,255,.12)" stroke-width="10" stroke-linecap="round"/>
+        <path d="M195 70v140" stroke="rgba(255,255,255,.20)" stroke-width="10" stroke-linecap="round"/>
+        <path d="M195 72l88 42-88 34z" fill="rgba(255,255,255,.14)"/>
+        <circle cx="270" cy="206" r="18" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.18)" stroke-width="8"/>
+      </svg>
+    `),
+    combat: svgDataUri(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
+        <rect width="420" height="280" rx="28" fill="#0f0f18"/>
+        <path d="M145 170c0-30 20-55 55-55h28c26 0 47 21 47 47v34c0 22-18 40-40 40h-62c-15 0-28-12-28-28z"
+              fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.18)" stroke-width="10" stroke-linejoin="round"/>
+        <path d="M205 110v126" stroke="rgba(255,255,255,.18)" stroke-width="10" stroke-linecap="round"/>
+      </svg>
+    `),
+    motorsport: svgDataUri(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
+        <rect width="420" height="280" rx="28" fill="#0f0f18"/>
+        <path d="M120 170h160l40 24h-200z" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.18)" stroke-width="10" stroke-linejoin="round"/>
+        <circle cx="170" cy="204" r="20" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.20)" stroke-width="10"/>
+        <circle cx="270" cy="204" r="20" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.20)" stroke-width="10"/>
+        <path d="M150 148h120" stroke="rgba(255,255,255,.18)" stroke-width="10" stroke-linecap="round"/>
+      </svg>
+    `),
+  };
+
+  function isLogoUrl(u){
+    const s = String(u || "").trim();
+    if(!s) return true;
+    const low = s.toLowerCase();
+    if(low === "./logo.png" || low.endsWith("/logo.png") || low.includes("kaelus-app/logo.png")) return true;
+    // algunos backends devuelven LOGO_URL público
+    if(low.includes("logo.png") && low.includes("github")) return true;
+    return false;
+  }
+
+  // Cache local de posters (para no pedirlo cada render)
+  let POSTER_LOCAL = (function(){
+    try{ return JSON.parse(localStorage.getItem("BCNTV_POSTER_CACHE")||"{}") || {}; }
+    catch(e){ return {}; }
+  })();
+  function savePosterLocal(){
+    try{ localStorage.setItem("BCNTV_POSTER_CACHE", JSON.stringify(POSTER_LOCAL)); }catch(e){}
+  }
+
+  const POSTER_QUEUE = [];
+  let POSTER_TIMER = null;
+
+  function sportIllustrationKey(it){
+    const m = (it && it.meta) ? it.meta : {};
+    const blob = ((m.competition||"") + " " + (it.cat||"") + " " + (m.raw||"") + " " + (it.t||"")).toLowerCase();
+
+    if(blob.includes("nba") || blob.includes("basket")) return "basketball";
+    if(blob.includes("nfl") || blob.includes("football americano") || blob.includes("super bowl")) return "football";
+    if(blob.includes("mlb") || blob.includes("beisbol") || blob.includes("béisbol") || blob.includes("baseball")) return "baseball";
+    if(blob.includes("tenis") || blob.includes("wimbledon") || blob.includes("roland") || blob.includes("atp") || blob.includes("wta") || blob.includes("grand")) return "tennis";
+    if(blob.includes("golf") || blob.includes("pga") || blob.includes("liv golf") || blob.includes("masters")) return "golf";
+    if(blob.includes("ufc") || blob.includes("box") || blob.includes("boxeo") || blob.includes("combate") || blob.includes("wwe") || blob.includes("aew") || blob.includes("bellator")) return "combat";
+    if(blob.includes("f1") || blob.includes("formula") || blob.includes("motogp") || blob.includes("nascar")) return "motorsport";
+    return "soccer";
+  }
+
+  function resolveCardImage(it){
+    const m = it.meta || {};
+    const type = (m.type || "").toLowerCase();
+
+    // Deportes: ilustración (no logo)
+    if(type === "sport"){
+      const key = sportIllustrationKey(it);
+      return {
+        src: SPORT_ILLUSTRATIONS[key] || IMG_PLACEHOLDER_SPORT,
+        fallback: IMG_PLACEHOLDER_SPORT,
+        needsFetch: false
+      };
+    }
+
+    // VOD: intenta Zuplo (cache + meta.art + item.img). Si todo falla, placeholder (NO logo).
+    if(type === "movie" || type === "series"){
+      const zu = (m.art && typeof m.art === "object") ? m.art : {};
+      const titleClean = String(m.title_clean || it.t || "").trim();
+      const kind = (type === "series") ? "tv" : "movie";
+      const cacheKey = `${kind}:${titleClean.toLowerCase()}`;
+
+      const placeholder = (type === "series") ? IMG_PLACEHOLDER_SERIES : IMG_PLACEHOLDER_MOVIE;
+
+      let src = POSTER_LOCAL[cacheKey] || zu.poster || zu.img || zu.url || zu.backdrop || it.img || "";
+      if(isLogoUrl(src)) src = "";
+
+      const needsFetch = (!src && !!titleClean);
+      return {
+        src: src || placeholder,
+        fallback: placeholder,
+        needsFetch,
+        titleClean,
+        kind,
+        cacheKey
+      };
+    }
+
+    // Fallback general
+    return { src: (it.img || "./logo.png"), fallback: "./logo.png", needsFetch: false };
+  }
+
+  function queuePosterFetch(iid, titleClean, kind, cacheKey){
+    if(!titleClean) return;
+    const key = cacheKey || `${kind}:${titleClean.toLowerCase()}`;
+    if(POSTER_LOCAL[key]) return;
+    if(POSTER_QUEUE.some(x => x.key === key)) return;
+
+    POSTER_QUEUE.push({iid, titleClean, kind, key});
+    if(!POSTER_TIMER) POSTER_TIMER = setTimeout(processPosterQueue, 60);
+  }
+
+  async function processPosterQueue(){
+    POSTER_TIMER = null;
+    const batch = POSTER_QUEUE.splice(0, 10);
+    if(!batch.length) return;
+
+    const headers = {};
+    if(API_KEY) headers["x-api-key"] = API_KEY;
+
+    for(const job of batch){
+      try{
+        const url = `${API_BASE}/api/poster?title=${encodeURIComponent(job.titleClean)}&type=${encodeURIComponent(job.kind)}`;
+        const r = await fetch(url, {headers, cache:"no-store"});
+        if(!r.ok) continue;
+        const j = await r.json();
+        const poster = (j && (j.poster || j.img || j.url || j.backdrop)) ? String(j.poster || j.img || j.url || j.backdrop) : "";
+        if(!poster || isLogoUrl(poster)) continue;
+
+        POSTER_LOCAL[job.key] = poster;
+
+        const imgEl = document.getElementById(`img-${job.iid}`);
+        if(imgEl){
+          const cur = imgEl.getAttribute("src") || "";
+          // si todavía está en placeholder, reemplazamos
+          if(cur.startsWith("data:image/svg+xml") || isLogoUrl(cur)){
+            imgEl.setAttribute("src", poster);
+          }
+        }
+      }catch(e){
+        console.warn("poster fetch error", e);
+      }
+    }
+
+    savePosterLocal();
+    if(POSTER_QUEUE.length) POSTER_TIMER = setTimeout(processPosterQueue, 120);
+  }
+
+
+
   function escapeRegExp(s){
     return (s||"").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
@@ -542,6 +812,11 @@ function card(it){
 
     const iid = itemId(it);
 
+    const imgInfo = resolveCardImage(it);
+    if(imgInfo && imgInfo.needsFetch){
+      queuePosterFetch(iid, imgInfo.titleClean, imgInfo.kind, imgInfo.cacheKey);
+    }
+
     const favOn = isFav(iid);
     const favLabel = favOn ? "Quitar de favoritos" : "Agregar a favoritos";
     const favIcon = favOn ? "★" : "☆";
@@ -580,7 +855,7 @@ function card(it){
 
     return `
       <div class="card">
-        <img class="poster" loading="lazy" src="${escapeHtml(it.img || "./logo.png")}" alt="img" onerror="this.src='./logo.png'"/>
+        <img id="img-${escapeHtml(iid)}" class="poster" loading="lazy" src="${escapeHtml(imgInfo.src)}" alt="img" onerror="this.onerror=null;this.src='${escapeHtml(imgInfo.fallback)}';"/>
         <div class="meta">
           ${type === "sport" ? `<p class="t"><b><span class="megaphone">📣︎</span> ${escapeHtml(it.t || "")}</b></p>` : `<p class="t">${escapeHtml(it.t || "")}</p>`}
 
