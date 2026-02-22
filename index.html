@@ -71,6 +71,10 @@
     .posterBox{grid-area:poster;width:96px;height:136px;border-radius:14px;border:1px solid var(--line);background:#0f0f18;overflow:hidden;display:flex;align-items:center;justify-content:center}
     .posterImg{width:100%;height:100%;object-fit:cover;display:block}
     .posterBox svg{width:100%;height:100%;display:block}
+    .posterEmojiWrap{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+    .posterEmojiWrap .pe{font-size:64px;line-height:1}
+    .posterEmojiWrap .pl{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.75)}
+
     .meta{grid-area:meta;min-width:0}
     .t{font-weight:900;margin:0 0 6px 0;font-size:15px;line-height:1.25}
     .pill{display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--muted);font-size:12px;margin-right:6px;margin-bottom:6px}
@@ -523,7 +527,8 @@
     // Imagen real (http/https)
     if(imgInfo && imgInfo.mode === "img" && isHttpUrl(imgInfo.src)){
       const src = escapeHtml(imgInfo.src);
-      const fb = encodeURIComponent(String(imgInfo.fallbackSvg || "").trim());
+      // fallback puede ser SVG o HTML (emoji)
+      const fb = encodeURIComponent(String(imgInfo.fallbackHtml || imgInfo.fallbackSvg || "").trim());
       const fbAttr = escapeHtml(fb);
 
       return `<div class="posterBox" id="${escapeHtml(pid)}" data-fb="${fbAttr}">` +
@@ -532,60 +537,88 @@
              `</div>`;
     }
 
-    // SVG inline (no depende de data:)
+    // Placeholder HTML (emoji/label) — ultra robusto
+    if(imgInfo && imgInfo.mode === "emoji"){
+      const em = escapeHtml(imgInfo.emoji || "🖼️");
+      const label = escapeHtml(imgInfo.label || "");
+      const inner = `<div class="posterEmojiWrap"><div class="pe">${em}</div>` + (label?`<div class="pl">${label}</div>`:"") + `</div>`;
+      return `<div class="posterBox" id="${escapeHtml(pid)}">${inner}</div>`;
+    }
+
+    // SVG inline (si existe)
     const svg = (imgInfo && imgInfo.svg) ? imgInfo.svg : "";
     const safeSvg = String(svg||"").trim() || String(imgInfo && imgInfo.fallbackSvg || "").trim() || "";
+    // Si no hay SVG, caemos a emoji genérico
+    if(!safeSvg){
+      const inner = `<div class="posterEmojiWrap"><div class="pe">🖼️</div></div>`;
+      return `<div class="posterBox" id="${escapeHtml(pid)}">${inner}</div>`;
+    }
     return `<div class="posterBox" id="${escapeHtml(pid)}">${safeSvg}</div>`;
   }
 
-function resolveCardImage(it){
+  function resolveCardImage(it){
     const m = it.meta || {};
-    const type = (m.type || "").toLowerCase();
+    let type = String(m.type || "").toLowerCase();
 
-    // Deportes: ilustración inline (no data:, no logo)
-    if(type === "sport"){
-      const key = sportIllustrationKey(it);
-      const svg = SPORT_ILLUSTRATIONS[key] || IMG_PLACEHOLDER_SPORT;
-      return {
-        mode: "svg",
-        svg,
-        fallbackSvg: IMG_PLACEHOLDER_SPORT,
-        needsFetch: false
-      };
+    // Back-compat: si falta meta.type, inferimos por cat o por campos típicos
+    if(!type){
+      const cat = String(it.cat || "").toLowerCase();
+      if(cat.includes("deport")) type = "sport";
+      else if(cat.includes("pel")) type = "movie";
+      else if(cat.includes("seri")) type = "series";
+      else{
+        // heurística: si parece evento deportivo
+        if(m.start_utc || m.competition || m.hora_text || m.categoria || m.is_live_now) type = "sport";
+      }
     }
 
-    // VOD: poster real (http) o placeholder inline (NO logo)
+    // Deportes: emoji representativo (siempre visible)
+    if(type === "sport"){
+      const key = sportIllustrationKey(it);
+      const emoji =
+        key === "soccer" ? "⚽" :
+        key === "basketball" ? "🏀" :
+        key === "football" ? "🏈" :
+        key === "baseball" ? "⚾" :
+        key === "tennis" ? "🎾" :
+        key === "golf" ? "⛳" :
+        key === "combat" ? "🥊" :
+        key === "motor" ? "🏎️" :
+        "🏟️";
+      return { mode:"emoji", emoji, label:"DEPORTE", needsFetch:false };
+    }
+
+    // VOD: poster real (https/http) o placeholder emoji (NO logo)
     if(type === "movie" || type === "series"){
       const zu = (m.art && typeof m.art === "object") ? m.art : {};
       const titleClean = String(m.title_clean || it.t || "").trim();
       const kind = (type === "series") ? "tv" : "movie";
       const cacheKey = `${kind}:${titleClean.toLowerCase()}`;
 
-      const placeholderSvg = (type === "series") ? IMG_PLACEHOLDER_SERIES : IMG_PLACEHOLDER_MOVIE;
+      const placeholder = (type === "series")
+        ? { mode:"emoji", emoji:"📺", label:"SERIE" }
+        : { mode:"emoji", emoji:"🎬", label:"PELÍCULA" };
 
       let src = POSTER_LOCAL[cacheKey] || zu.poster || zu.img || zu.url || zu.backdrop || it.img || "";
       if(isLogoUrl(src)) src = "";
 
       const needsFetch = (!src && !!titleClean);
 
-      // Si es URL http(s), lo tratamos como imagen real
       if(src && isHttpUrl(src)){
         return {
-          mode: "img",
+          mode:"img",
           src,
-          fallbackSvg: placeholderSvg,
-          needsFetch: false,
+          fallbackHtml: `<div class="posterEmojiWrap"><div class="pe">${placeholder.emoji}</div><div class="pl">${placeholder.label}</div></div>`,
+          needsFetch:false,
           titleClean,
           kind,
           cacheKey
         };
       }
 
-      // Si no hay URL, usamos SVG inline (placeholder)
+      // Sin URL: placeholder emoji (y opcionalmente buscamos en Zuplo)
       return {
-        mode: "svg",
-        svg: src || placeholderSvg,
-        fallbackSvg: placeholderSvg,
+        ...placeholder,
         needsFetch,
         titleClean,
         kind,
@@ -593,14 +626,11 @@ function resolveCardImage(it){
       };
     }
 
-    // Fallback general (mantiene comportamiento previo)
-    return {
-      mode: "img",
-      src: (it.img || "./logo.png"),
-      fallbackSvg: IMG_PLACEHOLDER_SPORT,
-      needsFetch: false
-    };
+    // Fallback general
+    return { mode:"emoji", emoji:"🖼️", label:"", needsFetch:false };
   }
+
+
 
   function queuePosterFetch(iid, titleClean, kind, cacheKey){
     if(!titleClean) return;
@@ -639,8 +669,8 @@ function resolveCardImage(it){
           imgEl.setAttribute("src", poster);
         }else{
           // si todavía está en SVG placeholder, reemplazamos por <img>
-          const placeholderSvg = (job.kind === "tv") ? IMG_PLACEHOLDER_SERIES : IMG_PLACEHOLDER_MOVIE;
-          posterBox.setAttribute("data-fb", encodeURIComponent(String(placeholderSvg||"").trim()));
+          const placeholderHtml = (job.kind === "tv") ? `<div class=\"posterEmojiWrap\"><div class=\"pe\">📺</div><div class=\"pl\">SERIE</div></div>` : `<div class=\"posterEmojiWrap\"><div class=\"pe\">🎬</div><div class=\"pl\">PELÍCULA</div></div>`;
+          posterBox.setAttribute("data-fb", encodeURIComponent(String(placeholderHtml||"").trim()));
           posterBox.innerHTML =
             `<img id="img-${escapeHtml(job.iid)}" class="posterImg" loading="lazy" src="${escapeHtml(poster)}" alt="" ` +
             `onerror="this.onerror=null;const b=this.parentElement.getAttribute('data-fb');if(b){this.parentElement.innerHTML=decodeURIComponent(b);}"/>`;
