@@ -532,7 +532,32 @@ function looksLikeImageUrl(u){
     return false;
   }
 
-    function posterHtml(iid, imgInfo){
+    
+  // Reintento para posters (Render puede responder HTML mientras "despierta"; la imagen falla y dispararía onerror).
+  // Intentamos varias veces con cache-busting antes de rendirnos al fallback.
+  function retryPoster(img){
+    try{
+      const max = 4;
+      const n = parseInt(img.getAttribute("data-retry") || "0", 10);
+      const base = img.getAttribute("data-sbase") || img.getAttribute("src") || "";
+      if(n < max && base){
+        img.setAttribute("data-retry", String(n+1));
+        img.setAttribute("data-sbase", base.split(/([&?])r=\d+/).join("")); // limpia r=
+        const clean = img.getAttribute("data-sbase") || base;
+        const sep = clean.includes("?") ? "&" : "?";
+        setTimeout(()=>{ img.setAttribute("src", clean + sep + "r=" + Date.now()); }, 650);
+        return;
+      }
+      // fallback final
+      const box = img.parentElement;
+      const b = box && box.getAttribute("data-fb");
+      if(b) box.innerHTML = decodeURIComponent(b);
+    }catch(e){
+      // silencioso
+    }
+  }
+
+function posterHtml(iid, imgInfo){
     const pid = `poster-${iid}`;
 
     // Imagen real (http/https)
@@ -543,8 +568,8 @@ function looksLikeImageUrl(u){
       const fbAttr = escapeHtml(fb);
 
       return `<div class="posterBox" id="${escapeHtml(pid)}" data-fb="${fbAttr}">` +
-             `<img id="img-${escapeHtml(iid)}" class="posterImg" loading="lazy" src="${src}" alt="" ` +
-             `onerror="this.onerror=null;const b=this.parentElement.getAttribute('data-fb');if(b){this.parentElement.innerHTML=decodeURIComponent(b);}"/>` +
+             `<img id="img-${escapeHtml(iid)}" class="posterImg" loading="lazy" src="${src}" data-sbase="${src}" data-retry="0" alt="" ` +
+             `onerror="retryPoster(this)"/>` +
              `</div>`;
     }
 
@@ -602,7 +627,7 @@ function looksLikeImageUrl(u){
     // VOD: poster real (https/http) o placeholder emoji (NO logo)
     if(type === "movie" || type === "series"){
       const zu = (m.art && typeof m.art === "object") ? m.art : {};
-      const titleClean = String(m.title_clean || it.t || "").trim();
+      const titleClean = String(m.title_clean || m.title || m.name || (m.info && (m.info.title || m.info.name)) || it.t || it.title || it.name || it.nombre || "").trim();
       const kind = (type === "series") ? "tv" : "movie";
       const cacheKey = `${kind}:${titleClean.toLowerCase()}`;
 
@@ -684,8 +709,8 @@ function looksLikeImageUrl(u){
           const placeholderHtml = (job.kind === "tv") ? `<div class=\"posterEmojiWrap\"><div class=\"pe\">📺</div><div class=\"pl\">SERIE</div></div>` : `<div class=\"posterEmojiWrap\"><div class=\"pe\">🎬</div><div class=\"pl\">PELÍCULA</div></div>`;
           posterBox.setAttribute("data-fb", encodeURIComponent(String(placeholderHtml||"").trim()));
           posterBox.innerHTML =
-            `<img id="img-${escapeHtml(job.iid)}" class="posterImg" loading="lazy" src="${escapeHtml(poster)}" alt="" ` +
-            `onerror="this.onerror=null;const b=this.parentElement.getAttribute('data-fb');if(b){this.parentElement.innerHTML=decodeURIComponent(b);}"/>`;
+            `<img id="img-${escapeHtml(job.iid)}" class="posterImg" loading="lazy" src="${escapeHtml(poster)}" data-sbase="${escapeHtml(poster)}" data-retry="0" alt="" ` +
+            `onerror="retryPoster(this)"/>`;
         }
       }catch(e){
         console.warn("poster fetch error", e);
