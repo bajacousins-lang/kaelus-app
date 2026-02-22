@@ -489,12 +489,28 @@
     const m = (it && it.meta) ? it.meta : {};
     const blob = ((m.competition||"") + " " + (it.cat||"") + " " + (m.raw||"") + " " + (it.t||"")).toLowerCase();
 
+    // Soccer / fútbol
+    if(blob.includes("futbol") || blob.includes("fútbol") || blob.includes("soccer") ||
+       blob.includes("laliga") || blob.includes("liga mx") || blob.includes("champions") || blob.includes("uefa")) return "soccer";
+
+    // Otros deportes populares
     if(blob.includes("nba") || blob.includes("basket")) return "basketball";
     if(blob.includes("nfl") || blob.includes("football americano") || blob.includes("super bowl")) return "football";
     if(blob.includes("mlb") || blob.includes("beisbol") || blob.includes("béisbol") || blob.includes("baseball")) return "baseball";
     if(blob.includes("tenis") || blob.includes("wimbledon") || blob.includes("roland") || blob.includes("atp") || blob.includes("wta") || blob.includes("grand")) return "tennis";
     if(blob.includes("golf") || blob.includes("pga") || blob.includes("liv golf") || blob.includes("masters")) return "golf";
-    if(blob.includes("ufc") || blob.includes("box") || blob.includes("boxeo") || blob.includes("combate") || blob.includes("wwe") || blob.includes("aew") || blob.includes("b
+
+    // Combate / lucha
+    if(blob.includes("ufc") || blob.includes("mma") || blob.includes("boxeo") || blob.includes("boxing") ||
+       blob.includes("combate") || blob.includes("wwe") || blob.includes("aew") || blob.includes("bellator")) return "combat";
+
+    // Motor
+    if(blob.includes("f1") || blob.includes("formula") || blob.includes("motogp") || blob.includes("moto gp") ||
+       blob.includes("nascar") || blob.includes("rally") || blob.includes("moto")) return "motorsport";
+
+    return "soccer";
+  }
+
   function isHttpUrl(u){
     const s = String(u||"").trim();
     return /^https?:\/\//i.test(s);
@@ -517,21 +533,11 @@
 
     // SVG inline (no depende de data:)
     const svg = (imgInfo && imgInfo.svg) ? imgInfo.svg : "";
-    const safeSvg = String(svg||"").trim() || String(imgInfo && imgInfo.fallbackSvg || "").trim();
-    return `<div class="posterBox" id="${escapeHtml(pid)}">${safeSvg}</div>`;
-  }
-    // SVG inline (no depende de data: ni de CSP img-src)
-    const svg = (imgInfo && imgInfo.svg) ? imgInfo.svg : (imgInfo && imgInfo.src) ? imgInfo.src : "";
-    const safeSvg = String(svg||"").trim() || String(imgInfo.fallback||"").trim() || "";
+    const safeSvg = String(svg||"").trim() || String(imgInfo && imgInfo.fallbackSvg || "").trim() || "";
     return `<div class="posterBox" id="${escapeHtml(pid)}">${safeSvg}</div>`;
   }
 
-ellator")) return "combat";
-    if(blob.includes("f1") || blob.includes("formula") || blob.includes("motogp") || blob.includes("nascar")) return "motorsport";
-    return "soccer";
-  }
-
-  function resolveCardImage(it){
+function resolveCardImage(it){
     const m = it.meta || {};
     const type = (m.type || "").toLowerCase();
 
