@@ -63,11 +63,13 @@
           "meta"
           "actions";
       }
-      .poster{width:100%;height:190px}
+      .posterBox{width:100%;height:190px}
       .actions{justify-content:flex-start}
     }
 
-    .poster{grid-area:poster;width:96px;height:136px;border-radius:14px;border:1px solid var(--line);background:#0f0f18;object-fit:cover}
+    .posterBox{grid-area:poster;width:96px;height:136px;border-radius:14px;border:1px solid var(--line);background:#0f0f18;overflow:hidden;display:flex;align-items:center;justify-content:center}
+    .posterImg{width:100%;height:100%;object-fit:cover;display:block}
+    .posterBox svg{width:100%;height:100%;display:block}
     .meta{grid-area:meta;min-width:0}
     .t{font-weight:900;margin:0 0 6px 0;font-size:15px;line-height:1.25}
     .pill{display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--muted);font-size:12px;margin-right:6px;margin-bottom:6px}
@@ -336,12 +338,11 @@
 
 
   // ===== Imágenes (placeholders + posters Zuplo) =====
-  function svgDataUri(svg){
-    return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(String(svg||"").trim());
+  function svgInline(svg){
+    return String(svg||"").trim();
   }
-
-  // Placeholders (evitan usar el logo)
-  const IMG_PLACEHOLDER_MOVIE = svgDataUri(`
+// Placeholders (evitan usar el logo)
+  const IMG_PLACEHOLDER_MOVIE = svgInline(`
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
       <defs>
         <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
@@ -357,7 +358,7 @@
     </svg>
   `);
 
-  const IMG_PLACEHOLDER_SERIES = svgDataUri(`
+  const IMG_PLACEHOLDER_SERIES = svgInline(`
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
       <defs>
         <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
@@ -374,7 +375,7 @@
     </svg>
   `);
 
-  const IMG_PLACEHOLDER_SPORT = svgDataUri(`
+  const IMG_PLACEHOLDER_SPORT = svgInline(`
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
       <defs>
         <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
@@ -391,7 +392,7 @@
 
   // Ilustraciones simples por deporte (evitan logos por canal)
   const SPORT_ILLUSTRATIONS = {
-    soccer: svgDataUri(`
+    soccer: svgInline(`
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
         <rect width="420" height="280" rx="28" fill="#0f0f18"/>
         <rect x="34" y="34" width="352" height="212" rx="18" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.10)"/>
@@ -400,7 +401,7 @@
         <path d="M178 122l-22 18 10 30 24-10m76-38l22 18-10 30-24-10" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     `),
-    basketball: svgDataUri(`
+    basketball: svgInline(`
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
         <rect width="420" height="280" rx="28" fill="#0f0f18"/>
         <circle cx="210" cy="140" r="78" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.18)" stroke-width="10"/>
@@ -408,7 +409,7 @@
         <path d="M165 75c35 30 35 120 0 150M255 75c-35 30-35 120 0 150" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="10" stroke-linecap="round"/>
       </svg>
     `),
-    football: svgDataUri(`
+    football: svgInline(`
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
         <rect width="420" height="280" rx="28" fill="#0f0f18"/>
         <ellipse cx="210" cy="140" rx="112" ry="72" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.18)" stroke-width="10"/>
@@ -418,7 +419,7 @@
         <path d="M202 132v16M218 132v16" stroke="rgba(255,255,255,.24)" stroke-width="6" stroke-linecap="round"/>
       </svg>
     `),
-    baseball: svgDataUri(`
+    baseball: svgInline(`
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
         <rect width="420" height="280" rx="28" fill="#0f0f18"/>
         <circle cx="210" cy="140" r="78" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.18)" stroke-width="10"/>
@@ -426,7 +427,7 @@
         <path d="M182 110c10 6 10 54 0 60M238 110c-10 6-10 54 0 60" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="8" stroke-linecap="round"/>
       </svg>
     `),
-    tennis: svgDataUri(`
+    tennis: svgInline(`
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
         <rect width="420" height="280" rx="28" fill="#0f0f18"/>
         <circle cx="210" cy="140" r="74" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.18)" stroke-width="10"/>
@@ -434,7 +435,7 @@
         <path d="M272 120c-32 0-48 18-48 44s16 44 48 44" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="10" stroke-linecap="round"/>
       </svg>
     `),
-    golf: svgDataUri(`
+    golf: svgInline(`
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
         <rect width="420" height="280" rx="28" fill="#0f0f18"/>
         <path d="M135 210h170" stroke="rgba(255,255,255,.12)" stroke-width="10" stroke-linecap="round"/>
@@ -443,7 +444,7 @@
         <circle cx="270" cy="206" r="18" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.18)" stroke-width="8"/>
       </svg>
     `),
-    combat: svgDataUri(`
+    combat: svgInline(`
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
         <rect width="420" height="280" rx="28" fill="#0f0f18"/>
         <path d="M145 170c0-30 20-55 55-55h28c26 0 47 21 47 47v34c0 22-18 40-40 40h-62c-15 0-28-12-28-28z"
@@ -451,7 +452,7 @@
         <path d="M205 110v126" stroke="rgba(255,255,255,.18)" stroke-width="10" stroke-linecap="round"/>
       </svg>
     `),
-    motorsport: svgDataUri(`
+    motorsport: svgInline(`
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
         <rect width="420" height="280" rx="28" fill="#0f0f18"/>
         <path d="M120 170h160l40 24h-200z" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.18)" stroke-width="10" stroke-linejoin="round"/>
@@ -493,7 +494,39 @@
     if(blob.includes("mlb") || blob.includes("beisbol") || blob.includes("béisbol") || blob.includes("baseball")) return "baseball";
     if(blob.includes("tenis") || blob.includes("wimbledon") || blob.includes("roland") || blob.includes("atp") || blob.includes("wta") || blob.includes("grand")) return "tennis";
     if(blob.includes("golf") || blob.includes("pga") || blob.includes("liv golf") || blob.includes("masters")) return "golf";
-    if(blob.includes("ufc") || blob.includes("box") || blob.includes("boxeo") || blob.includes("combate") || blob.includes("wwe") || blob.includes("aew") || blob.includes("bellator")) return "combat";
+    if(blob.includes("ufc") || blob.includes("box") || blob.includes("boxeo") || blob.includes("combate") || blob.includes("wwe") || blob.includes("aew") || blob.includes("b
+  function isHttpUrl(u){
+    const s = String(u||"").trim();
+    return /^https?:\/\//i.test(s);
+  }
+
+  function posterHtml(iid, imgInfo){
+    const pid = `poster-${iid}`;
+
+    // Imagen real (http/https)
+    if(imgInfo && imgInfo.mode === "img" && isHttpUrl(imgInfo.src)){
+      const src = escapeHtml(imgInfo.src);
+      const fb = encodeURIComponent(String(imgInfo.fallbackSvg || "").trim());
+      const fbAttr = escapeHtml(fb);
+
+      return `<div class="posterBox" id="${escapeHtml(pid)}" data-fb="${fbAttr}">` +
+             `<img id="img-${escapeHtml(iid)}" class="posterImg" loading="lazy" src="${src}" alt="img" ` +
+             `onerror="this.onerror=null;const b=this.parentElement.getAttribute('data-fb');if(b){this.parentElement.innerHTML=decodeURIComponent(b);}"/>` +
+             `</div>`;
+    }
+
+    // SVG inline (no depende de data:)
+    const svg = (imgInfo && imgInfo.svg) ? imgInfo.svg : "";
+    const safeSvg = String(svg||"").trim() || String(imgInfo && imgInfo.fallbackSvg || "").trim();
+    return `<div class="posterBox" id="${escapeHtml(pid)}">${safeSvg}</div>`;
+  }
+    // SVG inline (no depende de data: ni de CSP img-src)
+    const svg = (imgInfo && imgInfo.svg) ? imgInfo.svg : (imgInfo && imgInfo.src) ? imgInfo.src : "";
+    const safeSvg = String(svg||"").trim() || String(imgInfo.fallback||"").trim() || "";
+    return `<div class="posterBox" id="${escapeHtml(pid)}">${safeSvg}</div>`;
+  }
+
+ellator")) return "combat";
     if(blob.includes("f1") || blob.includes("formula") || blob.includes("motogp") || blob.includes("nascar")) return "motorsport";
     return "soccer";
   }
@@ -502,32 +535,50 @@
     const m = it.meta || {};
     const type = (m.type || "").toLowerCase();
 
-    // Deportes: ilustración (no logo)
+    // Deportes: ilustración inline (no data:, no logo)
     if(type === "sport"){
       const key = sportIllustrationKey(it);
+      const svg = SPORT_ILLUSTRATIONS[key] || IMG_PLACEHOLDER_SPORT;
       return {
-        src: SPORT_ILLUSTRATIONS[key] || IMG_PLACEHOLDER_SPORT,
-        fallback: IMG_PLACEHOLDER_SPORT,
+        mode: "svg",
+        svg,
+        fallbackSvg: IMG_PLACEHOLDER_SPORT,
         needsFetch: false
       };
     }
 
-    // VOD: intenta Zuplo (cache + meta.art + item.img). Si todo falla, placeholder (NO logo).
+    // VOD: poster real (http) o placeholder inline (NO logo)
     if(type === "movie" || type === "series"){
       const zu = (m.art && typeof m.art === "object") ? m.art : {};
       const titleClean = String(m.title_clean || it.t || "").trim();
       const kind = (type === "series") ? "tv" : "movie";
       const cacheKey = `${kind}:${titleClean.toLowerCase()}`;
 
-      const placeholder = (type === "series") ? IMG_PLACEHOLDER_SERIES : IMG_PLACEHOLDER_MOVIE;
+      const placeholderSvg = (type === "series") ? IMG_PLACEHOLDER_SERIES : IMG_PLACEHOLDER_MOVIE;
 
       let src = POSTER_LOCAL[cacheKey] || zu.poster || zu.img || zu.url || zu.backdrop || it.img || "";
       if(isLogoUrl(src)) src = "";
 
       const needsFetch = (!src && !!titleClean);
+
+      // Si es URL http(s), lo tratamos como imagen real
+      if(src && isHttpUrl(src)){
+        return {
+          mode: "img",
+          src,
+          fallbackSvg: placeholderSvg,
+          needsFetch: false,
+          titleClean,
+          kind,
+          cacheKey
+        };
+      }
+
+      // Si no hay URL, usamos SVG inline (placeholder)
       return {
-        src: src || placeholder,
-        fallback: placeholder,
+        mode: "svg",
+        svg: src || placeholderSvg,
+        fallbackSvg: placeholderSvg,
         needsFetch,
         titleClean,
         kind,
@@ -535,8 +586,13 @@
       };
     }
 
-    // Fallback general
-    return { src: (it.img || "./logo.png"), fallback: "./logo.png", needsFetch: false };
+    // Fallback general (mantiene comportamiento previo)
+    return {
+      mode: "img",
+      src: (it.img || "./logo.png"),
+      fallbackSvg: IMG_PLACEHOLDER_SPORT,
+      needsFetch: false
+    };
   }
 
   function queuePosterFetch(iid, titleClean, kind, cacheKey){
@@ -568,13 +624,19 @@
 
         POSTER_LOCAL[job.key] = poster;
 
-        const imgEl = document.getElementById(`img-${job.iid}`);
+        const posterBox = document.getElementById(`poster-${job.iid}`);
+        if(!posterBox) continue;
+
+        const imgEl = posterBox.querySelector("img");
         if(imgEl){
-          const cur = imgEl.getAttribute("src") || "";
-          // si todavía está en placeholder, reemplazamos
-          if(cur.startsWith("data:image/svg+xml") || isLogoUrl(cur)){
-            imgEl.setAttribute("src", poster);
-          }
+          imgEl.setAttribute("src", poster);
+        }else{
+          // si todavía está en SVG placeholder, reemplazamos por <img>
+          const placeholderSvg = (job.kind === "tv") ? IMG_PLACEHOLDER_SERIES : IMG_PLACEHOLDER_MOVIE;
+          posterBox.setAttribute("data-fb", encodeURIComponent(String(placeholderSvg||"").trim()));
+          posterBox.innerHTML =
+            `<img id="img-${escapeHtml(job.iid)}" class="posterImg" loading="lazy" src="${escapeHtml(poster)}" alt="img" ` +
+            `onerror="this.onerror=null;const b=this.parentElement.getAttribute('data-fb');if(b){this.parentElement.innerHTML=decodeURIComponent(b);}"/>`;
         }
       }catch(e){
         console.warn("poster fetch error", e);
