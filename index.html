@@ -557,6 +557,63 @@ function looksLikeImageUrl(u){
     }
   }
 
+
+// Lazy poster loading queue (reduce burst -> helps Zuplo dev rate limits)
+const _posterQueue = [];
+let _posterQueueRunning = false;
+
+function posterLoaded(img){
+  try{
+    img.style.display = "block";
+    const box = img.parentElement;
+    const loading = box && box.querySelector(".posterLoading");
+    if(loading) loading.style.display = "none";
+  }catch(e){}
+}
+
+function enqueuePosterLoad(img){
+  if(!img || img.getAttribute("data-enqueued")==="1") return;
+  img.setAttribute("data-enqueued","1");
+  _posterQueue.push(img);
+  if(!_posterQueueRunning) runPosterQueue();
+}
+
+function runPosterQueue(){
+  _posterQueueRunning = true;
+  const step = ()=>{
+    const img = _posterQueue.shift();
+    if(!img){
+      _posterQueueRunning = false;
+      return;
+    }
+    const ds = img.getAttribute("data-src") || "";
+    if(ds && img.getAttribute("src") !== ds){
+      img.setAttribute("src", ds);
+    }
+    // 1 request cada 450ms aprox
+    setTimeout(step, 450);
+  };
+  step();
+}
+
+function initPosterLazy(){
+  const imgs = Array.from(document.querySelectorAll("img.lazyPoster"));
+  if(!imgs.length) return;
+  if(!("IntersectionObserver" in window)){
+    imgs.forEach(enqueuePosterLoad);
+    return;
+  }
+  const io = new IntersectionObserver((entries)=>{
+    for(const e of entries){
+      if(e.isIntersecting){
+        io.unobserve(e.target);
+        enqueuePosterLoad(e.target);
+      }
+    }
+  }, {root:null, rootMargin:"200px", threshold:0.01});
+  imgs.forEach(img=>io.observe(img));
+}
+
 function posterHtml(iid, imgInfo){
     const pid = `poster-${iid}`;
 
@@ -568,8 +625,9 @@ function posterHtml(iid, imgInfo){
       const fbAttr = escapeHtml(fb);
 
       return `<div class="posterBox" id="${escapeHtml(pid)}" data-fb="${fbAttr}">` +
-             `<img id="img-${escapeHtml(iid)}" class="posterImg" loading="lazy" src="${src}" data-sbase="${src}" data-retry="0" alt="" ` +
-             `onerror="retryPoster(this)"/>` +
+             `<div class="posterEmojiWrap posterLoading"><div class="pe">⏳</div><div class="pl">Cargando</div></div>` +
+             `<img id="img-${escapeHtml(iid)}" class="posterImg lazyPoster" loading="lazy" src="about:blank" data-src="${src}" data-sbase="${src}" data-retry="0" alt="" style="display:none" ` +
+             `onload="posterLoaded(this)" onerror="retryPoster(this)"/>` +
              `</div>`;
     }
 
@@ -1147,6 +1205,7 @@ const datesAll = [...byDate.keys()].sort((a,b)=>{
 
     grid.innerHTML = html;
     bindActions();
+    initPosterLazy();
   }
 
   function bindActions(){
