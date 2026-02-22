@@ -610,7 +610,7 @@ function looksLikeImageUrl(u){
         ? { mode:"emoji", emoji:"📺", label:"SERIE" }
         : { mode:"emoji", emoji:"🎬", label:"PELÍCULA" };
 
-      let src = POSTER_LOCAL[cacheKey] || zu.poster || zu.img || zu.url || zu.backdrop || it.img || "";
+      let src = POSTER_LOCAL[cacheKey] || zu.poster_img || zu.poster || zu.img || zu.url || zu.backdrop || it.img || "";
       if(isLogoUrl(src)) src = "";
       if(src && isHttpUrl(src) && !looksLikeImageUrl(src)) src = "";
 
