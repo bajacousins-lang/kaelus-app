@@ -159,8 +159,15 @@
     return localStorage.getItem("BCNTV_VIP") === "1";
   })();
 
-  // Backend por defecto (Render). Para GitHub Pages, normalmente no se toca.
-  const DEFAULT_API_BASE = "https://kaelus-bot.onrender.com";
+  // Backend por defecto:
+  // - En GitHub Pages (github.io) usamos el backend público.
+  // - Si se hospeda en otro dominio (p.ej. el mismo backend), usamos location.origin.
+  const IS_GH_PAGES = ((location.hostname || "").toLowerCase().endsWith("github.io"));
+  const DEFAULT_API_BASE = (function(){
+    if(location.protocol === "file:") return "https://kaelus-bot.onrender.com";
+    if(IS_GH_PAGES) return "https://kaelus-bot.onrender.com";
+    return location.origin;
+  })();
 
   // API base persistente + soporte ?api=...
   let API_BASE = (function(){
@@ -293,6 +300,22 @@
   }
 
   function safeLower(s){ return (s||"").toLowerCase(); }
+
+  // Lee id estable del item (back-compat: _id o id)
+  function itemId(it){
+    try{
+      if(!it || typeof it !== "object") return "";
+      const v = (it._id ?? it.id ?? (it.meta && (it.meta._id ?? it.meta.id)) ?? "");
+      if(v !== null && v !== undefined && String(v).trim()) return String(v).trim();
+      // fallback (solo para evitar crash): título + categoría
+      const t = String(it.t || "").trim();
+      const c = String(it.cat || "").trim();
+      return (t && c) ? (t + "|" + c) : (t || c || "");
+    }catch(e){
+      return "";
+    }
+  }
+
 
   function escapeRegExp(s){
     return (s||"").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
