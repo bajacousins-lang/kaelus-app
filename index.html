@@ -63,7 +63,8 @@
           "meta"
           "actions";
       }
-      .posterBox{width:100%;height:190px}
+      .posterBox{grid-area:poster;width:100%;height:190px;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#0f0f18}
+    .posterBox svg{width:100%;height:100%;display:block}
       .actions{justify-content:flex-start}
     }
 
@@ -390,26 +391,7 @@
     </svg>
   `);
 
-  
-  // Iconos locales (GitHub Pages) — siempre visibles, sin depender de Zuplo
-  const SPORT_ICON_SRC = {
-    soccer: "./assets/sports/soccer.svg",
-    basketball: "./assets/sports/basketball.svg",
-    football: "./assets/sports/football.svg",
-    baseball: "./assets/sports/baseball.svg",
-    tennis: "./assets/sports/tennis.svg",
-    golf: "./assets/sports/golf.svg",
-    combat: "./assets/sports/combat.svg",
-    motor: "./assets/sports/motor.svg",
-    other: "./assets/sports/sport.svg"
-  };
-
-  const VOD_PLACEHOLDER_SRC = {
-    movie: "./assets/vod/movie.svg",
-    series: "./assets/vod/series.svg"
-  };
-
-// Ilustraciones simples por deporte (evitan logos por canal)
+  // Ilustraciones simples por deporte (evitan logos por canal)
   const SPORT_ILLUSTRATIONS = {
     soccer: svgInline(`
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280">
@@ -530,74 +512,55 @@
     return "soccer";
   }
 
-  function isImgUrl(u){
+  function isHttpUrl(u){
     const s = String(u||"").trim();
-    if(!s) return false;
-    // Evitamos data: (CSP puede bloquearlo)
-    if(/^data:/i.test(s)) return false;
-    // http(s)
-    if(/^https?:\/\//i.test(s)) return true;
-    // rutas relativas / locales (GitHub Pages)
-    if(s.startsWith("/") || s.startsWith("./") || s.startsWith("../")) return true;
-    // archivos relativos tipo assets/xxx.svg
-    return /^[A-Za-z0-9_./-]+\.(png|jpe?g|webp|svg)$/i.test(s);
+    return /^https?:\/\//i.test(s);
   }
 
-function posterHtml(iid, imgInfo){
+  function posterHtml(iid, imgInfo){
     const pid = `poster-${iid}`;
 
-    const fbSvg = encodeURIComponent(String(imgInfo && imgInfo.fallbackSvg || "").trim());
-    const fbSvgAttr = escapeHtml(fbSvg);
+    // Imagen real (http/https)
+    if(imgInfo && imgInfo.mode === "img" && isHttpUrl(imgInfo.src)){
+      const src = escapeHtml(imgInfo.src);
+      const fb = encodeURIComponent(String(imgInfo.fallbackSvg || "").trim());
+      const fbAttr = escapeHtml(fb);
 
-    const fbSrc0 = (imgInfo && imgInfo.fallbackSrc && isImgUrl(imgInfo.fallbackSrc)) ? String(imgInfo.fallbackSrc).trim() : "";
-    const fbSrcAttr = escapeHtml(fbSrc0);
-
-    // Imagen (http/https o local)
-    if(imgInfo && imgInfo.mode === "img"){
-      let src0 = String(imgInfo.src||"").trim();
-      if(!isImgUrl(src0) && fbSrc0) src0 = fbSrc0;
-
-      if(isImgUrl(src0)){
-        const src = escapeHtml(src0);
-        return `<div class="posterBox" id="${escapeHtml(pid)}" data-fb="${fbSvgAttr}" data-fb-src="${fbSrcAttr}">` +
-               `<img id="img-${escapeHtml(iid)}" class="posterImg" loading="lazy" src="${src}" alt="" ` +
-               `onerror="this.onerror=null;const fb=this.parentElement.getAttribute('data-fb-src');if(fb){this.src=fb;return;}const b=this.parentElement.getAttribute('data-fb');if(b){this.parentElement.innerHTML=decodeURIComponent(b);}"/>` +
-               `</div>`;
-      }
+      return `<div class="posterBox" id="${escapeHtml(pid)}" data-fb="${fbAttr}">` +
+             `<img id="img-${escapeHtml(iid)}" class="posterImg" loading="lazy" src="${src}" alt="" ` +
+             `onerror="this.onerror=null;const b=this.parentElement.getAttribute('data-fb');if(b){this.parentElement.innerHTML=decodeURIComponent(b);}"/>` +
+             `</div>`;
     }
 
-    // SVG inline (fallback)
+    // SVG inline (no depende de data:)
     const svg = (imgInfo && imgInfo.svg) ? imgInfo.svg : "";
     const safeSvg = String(svg||"").trim() || String(imgInfo && imgInfo.fallbackSvg || "").trim() || "";
     return `<div class="posterBox" id="${escapeHtml(pid)}">${safeSvg}</div>`;
   }
 
-
 function resolveCardImage(it){
     const m = it.meta || {};
     const type = (m.type || "").toLowerCase();
 
-    // Deportes: icono local (siempre visible)
+    // Deportes: ilustración inline (no data:, no logo)
     if(type === "sport"){
       const key = sportIllustrationKey(it);
-      const src = (SPORT_ICON_SRC && SPORT_ICON_SRC[key]) ? SPORT_ICON_SRC[key] : (SPORT_ICON_SRC ? SPORT_ICON_SRC.other : "");
+      const svg = SPORT_ILLUSTRATIONS[key] || IMG_PLACEHOLDER_SPORT;
       return {
-        mode: "img",
-        src,
-        fallbackSrc: (SPORT_ICON_SRC ? SPORT_ICON_SRC.other : ""),
+        mode: "svg",
+        svg,
         fallbackSvg: IMG_PLACEHOLDER_SPORT,
         needsFetch: false
       };
     }
 
-    // VOD: poster real (Zuplo / meta.art) o placeholder local (NO logo)
+    // VOD: poster real (http) o placeholder inline (NO logo)
     if(type === "movie" || type === "series"){
       const zu = (m.art && typeof m.art === "object") ? m.art : {};
       const titleClean = String(m.title_clean || it.t || "").trim();
       const kind = (type === "series") ? "tv" : "movie";
       const cacheKey = `${kind}:${titleClean.toLowerCase()}`;
 
-      const placeholderSrc = (type === "series") ? VOD_PLACEHOLDER_SRC.series : VOD_PLACEHOLDER_SRC.movie;
       const placeholderSvg = (type === "series") ? IMG_PLACEHOLDER_SERIES : IMG_PLACEHOLDER_MOVIE;
 
       let src = POSTER_LOCAL[cacheKey] || zu.poster || zu.img || zu.url || zu.backdrop || it.img || "";
@@ -605,12 +568,11 @@ function resolveCardImage(it){
 
       const needsFetch = (!src && !!titleClean);
 
-      // Si es URL válida (http(s) o ruta local), la usamos
-      if(src && isImgUrl(src)){
+      // Si es URL http(s), lo tratamos como imagen real
+      if(src && isHttpUrl(src)){
         return {
           mode: "img",
           src,
-          fallbackSrc: placeholderSrc,
           fallbackSvg: placeholderSvg,
           needsFetch: false,
           titleClean,
@@ -619,11 +581,10 @@ function resolveCardImage(it){
         };
       }
 
-      // Mientras tanto, mostramos placeholder local y (si aplica) pedimos poster a backend
+      // Si no hay URL, usamos SVG inline (placeholder)
       return {
-        mode: "img",
-        src: placeholderSrc,
-        fallbackSrc: placeholderSrc,
+        mode: "svg",
+        svg: src || placeholderSvg,
         fallbackSvg: placeholderSvg,
         needsFetch,
         titleClean,
@@ -632,16 +593,14 @@ function resolveCardImage(it){
       };
     }
 
-    // Fallback general
+    // Fallback general (mantiene comportamiento previo)
     return {
       mode: "img",
       src: (it.img || "./logo.png"),
-      fallbackSrc: (SPORT_ICON_SRC ? SPORT_ICON_SRC.other : ""),
       fallbackSvg: IMG_PLACEHOLDER_SPORT,
       needsFetch: false
     };
   }
-
 
   function queuePosterFetch(iid, titleClean, kind, cacheKey){
     if(!titleClean) return;
@@ -679,17 +638,12 @@ function resolveCardImage(it){
         if(imgEl){
           imgEl.setAttribute("src", poster);
         }else{
-          // si todavía está en placeholder, reemplazamos por <img>
+          // si todavía está en SVG placeholder, reemplazamos por <img>
           const placeholderSvg = (job.kind === "tv") ? IMG_PLACEHOLDER_SERIES : IMG_PLACEHOLDER_MOVIE;
-          const placeholderSrc = (job.kind === "tv") ? VOD_PLACEHOLDER_SRC.series : VOD_PLACEHOLDER_SRC.movie;
-
           posterBox.setAttribute("data-fb", encodeURIComponent(String(placeholderSvg||"").trim()));
-          posterBox.setAttribute("data-fb-src", String(placeholderSrc||"").trim());
-
           posterBox.innerHTML =
             `<img id="img-${escapeHtml(job.iid)}" class="posterImg" loading="lazy" src="${escapeHtml(poster)}" alt="" ` +
-            `onerror="this.onerror=null;const fb=this.parentElement.getAttribute('data-fb-src');if(fb){this.src=fb;return;}const b=this.parentElement.getAttribute('data-fb');if(b){this.parentElement.innerHTML=decodeURIComponent(b);}"/>`;
-
+            `onerror="this.onerror=null;const b=this.parentElement.getAttribute('data-fb');if(b){this.parentElement.innerHTML=decodeURIComponent(b);}"/>`;
         }
       }catch(e){
         console.warn("poster fetch error", e);
