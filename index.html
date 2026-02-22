@@ -521,7 +521,18 @@
     return /^https?:\/\//i.test(s);
   }
 
-  function posterHtml(iid, imgInfo){
+function looksLikeImageUrl(u){
+    const s = String(u||"").trim();
+    if(!s) return false;
+    if(s.includes("/api/poster_img")) return true;
+    // common extensions
+    if(/\.(jpg|jpeg|png|webp|gif|bmp|svg)(\?|#|$)/i.test(s)) return true;
+    // some CDNs use paths without extension
+    if(/\/images\//i.test(s) || /\/image\//i.test(s)) return true;
+    return false;
+  }
+
+    function posterHtml(iid, imgInfo){
     const pid = `poster-${iid}`;
 
     // Imagen real (http/https)
@@ -601,6 +612,7 @@
 
       let src = POSTER_LOCAL[cacheKey] || zu.poster || zu.img || zu.url || zu.backdrop || it.img || "";
       if(isLogoUrl(src)) src = "";
+      if(src && isHttpUrl(src) && !looksLikeImageUrl(src)) src = "";
 
       const needsFetch = (!src && !!titleClean);
 
@@ -656,8 +668,8 @@
         const r = await fetch(url, {headers, cache:"no-store"});
         if(!r.ok) continue;
         const j = await r.json();
-        const poster = (j && (j.poster || j.img || j.url || j.backdrop)) ? String(j.poster || j.img || j.url || j.backdrop) : "";
-        if(!poster || isLogoUrl(poster)) continue;
+        const poster = (j && (j.poster_img || j.poster || j.img || j.url || j.backdrop || j.thumb)) ? String(j.poster_img || j.poster || j.img || j.url || j.backdrop || j.thumb) : "";
+        if(!poster || isLogoUrl(poster) || (isHttpUrl(poster) && !looksLikeImageUrl(poster))) continue;
 
         POSTER_LOCAL[job.key] = poster;
 
