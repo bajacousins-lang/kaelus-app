@@ -524,46 +524,15 @@
 function looksLikeImageUrl(u){
     const s = String(u||"").trim();
     if(!s) return false;
-
-    // reject common video/playlist urls
-    if(/\.(m3u8|mpd|mp4|mkv|avi|ts|m4v|mov|webm)(\?|#|$)/i.test(s)) return false;
-    if(/m3u8|\.mpd/i.test(s)) return false;
-
-    // our proxy is always an image response (or svg placeholder)
     if(s.includes("/api/poster_img")) return true;
-
-    // TMDB CDN
-    if(/image\.tmdb\.org/i.test(s)) return true;
-
-    // common image extensions
+    // common extensions
     if(/\.(jpg|jpeg|png|webp|gif|bmp|svg)(\?|#|$)/i.test(s)) return true;
-
+    // some CDNs use paths without extension
+    if(/\/images\//i.test(s) || /\/image\//i.test(s)) return true;
     return false;
   }
 
-  function isPosterCandidate(u){
-    const s = String(u||"").trim();
-    if(!isHttpUrl(s)) return false;
-    if(isLogoUrl(s)) return false;
-    return looksLikeImageUrl(s);
-  }
-
-
-  function normalizePosterQueryTitle(raw){
-    let s = String(raw||"").trim();
-
-    // Quitar ruido común en títulos del catálogo (solo para consulta a posters)
-    // Ejemplos: "Dual", "(2026)", "2026"
-    s = s.replace(/\bdual\b/ig, " ");
-    s = s.replace(/\((19|20)\d{2}\)/g, " ");
-    s = s.replace(/\[(19|20)\d{2}\]/g, " ");
-    s = s.replace(/\b(19|20)\d{2}\b/g, " ");
-
-    // Normalizar espacios
-    s = s.replace(/\s+/g, " ").trim();
-    return s;
-  }
-
+    
   // Reintento para posters (Render puede responder HTML mientras "despierta"; la imagen falla y dispararía onerror).
   // Intentamos varias veces con cache-busting antes de rendirnos al fallback.
   function retryPoster(img){
@@ -658,25 +627,19 @@ function posterHtml(iid, imgInfo){
     // VOD: poster real (https/http) o placeholder emoji (NO logo)
     if(type === "movie" || type === "series"){
       const zu = (m.art && typeof m.art === "object") ? m.art : {};
-      const titleClean = String(m.title_clean || m.title || m.titulo || m.name || m.nombre || (m.info && (m.info.title || m.info.titulo || m.info.name || m.info.nombre)) || it.t || it.title || it.titulo || it.name || it.nombre || "").trim();
-      const qTitle = normalizePosterQueryTitle(titleClean);
+      const titleClean = String(m.title_clean || m.title || m.name || (m.info && (m.info.title || m.info.name)) || it.t || it.title || it.name || it.nombre || "").trim();
       const kind = (type === "series") ? "tv" : "movie";
-      const cacheKey = `${kind}:${qTitle.toLowerCase()}`;
+      const cacheKey = `${kind}:${titleClean.toLowerCase()}`;
 
       const placeholder = (type === "series")
         ? { mode:"emoji", emoji:"📺", label:"SERIE" }
         : { mode:"emoji", emoji:"🎬", label:"PELÍCULA" };
 
-      let src = POSTER_LOCAL[cacheKey] || zu.poster_img || zu.poster || zu.img || zu.url || zu.backdrop || "";
-      if(!isPosterCandidate(src)) src = "";
+      let src = POSTER_LOCAL[cacheKey] || zu.poster_img || zu.poster || zu.img || zu.url || zu.backdrop || it.img || "";
+      if(isLogoUrl(src)) src = "";
+      if(src && isHttpUrl(src) && !looksLikeImageUrl(src)) src = "";
 
-      // Si no hay arte embebido, usa directamente el proxy del backend (TMDB) para que SIEMPRE haya poster en Películas/Series.
-      // Esto evita depender de la cola async /api/poster (que puede quedar bloqueada por caché o datos incompletos).
-      if(!src && qTitle){
-        src = `${API_BASE}/api/poster_img?title=${encodeURIComponent(qTitle)}&type=${encodeURIComponent(kind)}`;
-      }
-
-      const needsFetch = false;
+      const needsFetch = (!src && !!titleClean);
 
       if(src && isHttpUrl(src)){
         return {
@@ -709,15 +672,7 @@ function posterHtml(iid, imgInfo){
   function queuePosterFetch(iid, titleClean, kind, cacheKey){
     if(!titleClean) return;
     const key = cacheKey || `${kind}:${titleClean.toLowerCase()}`;
-    const cached = POSTER_LOCAL[key];
-    if(cached){
-      // Si el cache tiene logo o algo que no parece imagen, lo ignoramos y lo volvemos a pedir
-      if(isLogoUrl(cached) || (isHttpUrl(cached) && !looksLikeImageUrl(cached))){
-        delete POSTER_LOCAL[key];
-      }else{
-        return;
-      }
-    }
+    if(POSTER_LOCAL[key]) return;
     if(POSTER_QUEUE.some(x => x.key === key)) return;
 
     POSTER_QUEUE.push({iid, titleClean, kind, key});
@@ -848,10 +803,10 @@ function posterHtml(iid, imgInfo){
       }
     }
     if(TAB === "movies"){
-      arr = arr.filter(x => (x.meta && x.meta.type === "movie") || String(x.cat||"").toUpperCase().includes("PEL"));
+      arr = arr.filter(x => (x.meta && x.meta.type === "movie") || (x.cat||"").includes("PEL"));
     }
     if(TAB === "series"){
-      arr = arr.filter(x => (x.meta && x.meta.type === "series") || String(x.cat||"").toUpperCase().includes("SER"));
+      arr = arr.filter(x => (x.meta && x.meta.type === "series") || (x.cat||"").includes("SERIES"));
     }
     if(TAB === "favs"){
       arr = arr.filter(x => isFav(itemId(x)));
