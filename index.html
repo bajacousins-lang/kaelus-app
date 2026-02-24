@@ -550,43 +550,55 @@ function looksLikeImageUrl(u){
 
 
   function normalizePosterQueryTitle(raw){
-    // Normaliza títulos "sucios" del catálogo SOLO para consultar posters en TMDB:
-    // quita año, "dual", calidad/codec/audio, y basura típica.
-    let s = String(raw||"").trim();
+    // Limpieza agresiva SOLO para consultar posters en TMDB.
+    // Objetivo: que "Tenants (2024) lat" y "Tenants (2024) sub" consulten lo mismo,
+    // y que strings tipo "Hit And Run 2019 Dir.Ody.C.harahap sub" se reduzcan a un título usable.
+    let s = String(raw || "").trim();
 
-    // separadores comunes en releases
+    // normaliza separadores típicos de releases
     s = s.replace(/[._]+/g, " ");
     s = s.replace(/\s*[-|•]+\s*/g, " ");
 
-    // helper: borrar paréntesis/corchetes si contienen ruido
-    function dropIfNoisy(inner){
-      return /\b((19|20)\d{2}|dual|multi|latino|castellano|sub(?:titulado)?|vose|audio|aac|ac3|dts|atmos|webrip|web[- ]?dl|bluray|brrip|hdrip|hdtv|dvdrip|cam|telesync|ts|x264|x265|hevc|h\.?264|h\.?265|hdr|sd|hd|fhd|uhd|480p|720p|1080p|2160p|4k|8k)\b/i.test(inner||"");
-    }
-    s = s.replace(/\(([^)]{0,80})\)/g, (m,inner)=> dropIfNoisy(inner) ? " " : m);
-    s = s.replace(/\[([^\]]{0,80})\]/g, (m,inner)=> dropIfNoisy(inner) ? " " : m);
-    s = s.replace(/\{([^}]{0,80})\}/g, (m,inner)=> dropIfNoisy(inner) ? " " : m);
+    // Captura año si viene (con o sin paréntesis) para ayudar a TMDB
+    let year = "";
+    const ym = s.match(/\b(19|20)\d{2}\b/);
+    if(ym) year = ym[0];
 
-    // elimina tokens típicos
-    s = s.replace(/\b(dual(?:\s*audio)?|multi(?:\s*audio)?|latino|castellano|espa(?:ñ|n)ol|ingles|english|sub(?:titulado)?|vose|audio)\b/ig, " ");
+    // Quita bloques entre (), [], {} cuando traen ruido
+    function dropIfNoisy(inner){
+      return /\b((19|20)\d{2}|dual|multi|lat(?:ino)?|castellano|sub(?:titulado)?|vose|audio|aac|ac3|dts|atmos|webrip|web[- ]?dl|bluray|brrip|hdrip|hdtv|dvdrip|cam|telesync|ts|x264|x265|hevc|h\.?264|h\.?265|hdr|sd|hd|fhd|uhd|480p|720p|1080p|2160p|4k|8k)\b/i.test(inner||"");
+    }
+    s = s.replace(/\(([^)]{0,120})\)/g, (m,inner)=> dropIfNoisy(inner) ? " " : " ");
+    s = s.replace(/\[([^\]]{0,120})\]/g, (m,inner)=> dropIfNoisy(inner) ? " " : " ");
+    s = s.replace(/\{([^}]{0,120})\}/g, (m,inner)=> dropIfNoisy(inner) ? " " : " ");
+
+    // Elimina tokens típicos (incluye abreviaturas lat/sub)
+    s = s.replace(/\b(dual(?:\s*audio)?|multi(?:\s*audio)?|lat(?:ino)?|castellano|espa(?:ñ|n)ol|ingles|english|sub(?:titulado)?|subs?|vose|audio)\b/ig, " ");
     s = s.replace(/\b(480p|720p|1080p|2160p|4k|8k|sd|hd|fhd|uhd)\b/ig, " ");
     s = s.replace(/\b(x264|x265|hevc|h\.?264|h\.?265|hdr|webrip|web[- ]?dl|bluray|brrip|hdrip|hdtv|dvdrip|cam|telesync|ts|rip|remux|proper|repack|extended|unrated)\b/ig, " ");
     s = s.replace(/\b(aac|ac3|dts|atmos|5\.1|7\.1)\b/ig, " ");
 
-    // quita año
-    s = s.replace(/\((19|20)\d{2}\)/g, " ");
+    // Quita cosas tipo "Dir.Nombre.Apellido" / "Director ..." (suele venir al final)
+    s = s.replace(/\b(dir(?:ector)?)(?:\.|\s|:|-)+.*$/i, " ");
+
+    // Quita el año del cuerpo (lo re-agregamos al final si existe)
     s = s.replace(/\b(19|20)\d{2}\b/g, " ");
 
-    // corta basura después de separadores típicos si quedó muy largo
-    if(s.length > 80){
-      const cut = s.split(/\s{2,}|\s-\s|\s\/\s|\s\|\s|\s•\s/)[0];
-      if(cut && cut.length >= 3) s = cut;
-    }
-
-    // normalizar espacios/puntuación
+    // Normaliza espacios/puntuación
     s = s.replace(/["'`]/g, " ");
     s = s.replace(/\s+/g, " ").trim();
 
-    // limita tamaño para TMDB
+    // Si quedó vacío, vuelve al raw
+    if(!s) s = String(raw||"").trim();
+
+    // Re-agrega año como pista, si estaba
+    if(year){
+      const lower = s.toLowerCase();
+      if(!lower.endsWith(" " + year) && !lower.endsWith(year)){
+        s = (s + " " + year).trim();
+      }
+    }
+
     return s.slice(0, 120);
   }
 
@@ -684,25 +696,30 @@ function posterHtml(iid, imgInfo){
     // VOD: poster real (https/http) o placeholder emoji (NO logo)
     if(type === "movie" || type === "series"){
       const zu = (m.art && typeof m.art === "object") ? m.art : {};
-      const titleClean = String(m.title_clean || m.title || m.titulo || m.name || m.nombre || (m.info && (m.info.title || m.info.titulo || m.info.name || m.info.nombre)) || it.t || it.title || it.titulo || it.name || it.nombre || "").trim();
-      const qTitle = normalizePosterQueryTitle(titleClean) || String(titleClean||'').trim();
+      const rawTitle = String(m.title_clean || m.title || m.titulo || m.name || m.nombre || (m.info && (m.info.title || m.info.titulo || m.info.name || m.info.nombre)) || it.t || it.title || it.titulo || it.name || it.nombre || "").trim();
+      const qTitle = normalizePosterQueryTitle(rawTitle) || rawTitle;
       const kind = (type === "series") ? "tv" : "movie";
-      const cacheKey = `${kind}:${qTitle.toLowerCase()}`;
+
+      // Cache key: sin año ni ruido (para que "lat/sub/dual" compartan el mismo poster)
+      const keyTitle = String(qTitle || rawTitle).toLowerCase()
+        .replace(/\b(19|20)\d{2}\b/g, " ")
+        .replace(/\s+/g, " ").trim();
+      const cacheKey = `${kind}:${keyTitle}`;
 
       const placeholder = (type === "series")
         ? { mode:"emoji", emoji:"📺", label:"SERIE" }
         : { mode:"emoji", emoji:"🎬", label:"PELÍCULA" };
 
-      let src = POSTER_LOCAL[cacheKey] || zu.poster_img || zu.poster || zu.img || zu.url || zu.backdrop || "";
+      // Preferimos cache; evitamos "imágenes embebidas" que suelen ser logos o thumbs que rompen el match en Películas.
+      let src = POSTER_LOCAL[cacheKey] || "";
+      if(!src){
+        const emb = zu.poster_img || zu.poster || zu.img || zu.url || zu.backdrop || "";
+        // Solo aceptamos embebidas si vienen de TMDB (son posters reales)
+        if(isPosterCandidate(emb) && String(emb).toLowerCase().includes("image.tmdb.org")) src = String(emb);
+      }
       if(!isPosterCandidate(src)) src = "";
 
-      // Si no hay arte embebido, usa directamente el proxy del backend (TMDB) para que SIEMPRE haya poster en Películas/Series.
-      // Esto evita depender de la cola async /api/poster (que puede quedar bloqueada por caché o datos incompletos).
-      if(!src && qTitle){
-        src = `${API_BASE}/api/poster_img?title=${encodeURIComponent(qTitle)}&type=${encodeURIComponent(kind)}`;
-      }
-
-      const needsFetch = false;
+      const needsFetch = (!src && !!qTitle);
 
       if(src && isHttpUrl(src)){
         return {
@@ -710,21 +727,21 @@ function posterHtml(iid, imgInfo){
           src,
           fallbackHtml: `<div class="posterEmojiWrap"><div class="pe">${placeholder.emoji}</div><div class="pl">${placeholder.label}</div></div>`,
           needsFetch:false,
-          titleClean,
+          titleClean:qTitle,
           kind,
           cacheKey
         };
       }
 
-      // Sin URL: placeholder emoji (y opcionalmente buscamos en Zuplo)
       return {
-        ...placeholder,
+        mode:"emoji",
+        emoji: placeholder.emoji,
+        label: placeholder.label,
         needsFetch,
-        titleClean,
+        titleClean:qTitle,
         kind,
         cacheKey
-      };
-    }
+      };    }
 
     // Fallback general
     return { mode:"emoji", emoji:"🖼️", label:"", needsFetch:false };
@@ -760,12 +777,31 @@ function posterHtml(iid, imgInfo){
 
     for(const job of batch){
       try{
-        const url = `${API_BASE}/api/poster?title=${encodeURIComponent(job.titleClean)}&type=${encodeURIComponent(job.kind)}`;
-        const r = await fetch(url, {headers, cache:"no-store"});
-        if(!r.ok) continue;
-        const j = await r.json();
-        const poster = (j && (j.poster_img || j.poster || j.img || j.url || j.backdrop || j.thumb)) ? String(j.poster_img || j.poster || j.img || j.url || j.backdrop || j.thumb) : "";
-        if(!poster || isLogoUrl(poster) || (isHttpUrl(poster) && !looksLikeImageUrl(poster))) continue;
+        // Probamos varias variantes del título para maximizar el match en TMDB
+        const candidates = [];
+        const t0 = String(job.titleClean||"").trim();
+        if(t0) candidates.push(t0);
+
+        const tNoYear = t0.replace(/\b(19|20)\d{2}\b/g, " ").replace(/\s+/g, " ").trim();
+        if(tNoYear && !candidates.some(x=>x.toLowerCase()===tNoYear.toLowerCase())) candidates.push(tNoYear);
+
+        const tCut = tNoYear.split(/\s-\s|:|\||\/|•/)[0].trim();
+        if(tCut && !candidates.some(x=>x.toLowerCase()===tCut.toLowerCase())) candidates.push(tCut);
+
+        let poster = "";
+        for(const t of candidates){
+          const url = `${API_BASE}/api/poster?title=${encodeURIComponent(t)}&type=${encodeURIComponent(job.kind)}`;
+          const r = await fetch(url, {headers, cache:"no-store"});
+          if(!r.ok) continue;
+          const j = await r.json();
+          const cand = (j && (j.poster_img || j.poster || j.img || j.url || j.backdrop || j.thumb))
+            ? String(j.poster_img || j.poster || j.img || j.url || j.backdrop || j.thumb)
+            : "";
+          if(!cand || isLogoUrl(cand) || (isHttpUrl(cand) && !looksLikeImageUrl(cand))) continue;
+          poster = cand;
+          break;
+        }
+        if(!poster) continue;
 
         POSTER_LOCAL[job.key] = poster;
 
