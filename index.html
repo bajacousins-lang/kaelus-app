@@ -530,57 +530,42 @@ function looksLikeImageUrl(u){
     // some CDNs use paths without extension
     if(/\/images\//i.test(s) || /\/image\//i.test(s)) return true;
     return false;
-
-  // Limpieza agresiva SOLO para buscar posters en TMDB (no cambia el texto mostrado en la tarjeta).
-  function posterExtractYear(raw){
-    const s = String(raw||"");
-    const m = s.match(/\b(19\d{2}|20\d{2})\b/);
-    return m ? m[1] : "";
   }
-  function posterCleanTitle(raw){
-    let s = String(raw||"").trim();
 
-    // Quita extensiones comunes
-    s = s.replace(/\.(mp4|mkv|avi|mov|wmv|flv|webm|ts)\b/gi, " ");
+  // Normaliza títulos para buscar posters en TMDB:
+  // - Quita tags (lat/sub/cast/dual), años, calidad/codecs, director, extensiones, etc.
+  function normalizePosterQueryTitle(raw){
+    let s = String(raw || "").trim();
+    if(!s) return "";
 
-    // Normaliza separadores raros usados en releases
-    s = s.replace(/[._]+/g, " ");
+    // extensiones comunes de archivo al final
+    s = s.replace(/\.(mp4|mkv|avi|ts|mov|wmv)\s*$/i, " ");
 
-    // Quita brackets/paréntesis (suele traer año/idioma)
-    s = s.replace(/[\[\(\{][^\]\)\}]*[\]\)\}]/g, " ");
+    // separadores típicos en releases
+    s = s.replace(/[_]+/g, " ").replace(/[.]+/g, " ");
 
-    // Quita "Dir..." / "Director..." y todo lo que le sigue
-    s = s.replace(/\bdir\.?\s*[^\s].*$/i, " ");
-    s = s.replace(/\bdirector\b.*$/i, " ");
+    // elimina bloques entre paréntesis/corchetes/llaves (año, idioma, tags)
+    s = s.replace(/\[[^\]]*\]|\([^\)]*\)|\{[^\}]*\}/g, " ");
 
-    // Quita años sueltos
-    s = s.replace(/\b(19\d{2}|20\d{2})\b/g, " ");
+    // corta desde "Dir"/"Director" (muchas veces viene al final)
+    s = s.replace(/\b(dir(?:ector)?)\b[\s:._-]+.*$/i, " ");
 
-    // Quita tags de audio/subs/idioma (incluye abreviados)
-    s = s.replace(/\b(dual|multi|multiaudio|sub|subs|subtitulado|lat|latino|cast|castellano|espa(?:ñ|n)ol)\b/gi, " ");
+    // elimina años sueltos
+    s = s.replace(/\b(19|20)\d{2}\b/g, " ");
 
-    // Quita calidad/codec típicos
-    s = s.replace(/\b(480p|720p|1080p|2160p|4k|8k|hdr|webrip|web[- ]?dl|bluray|brrip|hdtv|x264|x265|h\.?264|h\.?265|hevc|aac|dts)\b/gi, " ");
+    // etiquetas de idioma/subs/audio comunes (incluye abreviados)
+    s = s.replace(/\b(lat|sub|subs?|cast|castellano|dual|multi|espa(?:ñ|n)ol|spanish|ingl(?:e|é)s|english)\b/gi, " ");
 
-    // Quita restos de símbolos
+    // calidad/codec
+    s = s.replace(/\b(480p|720p|1080p|2160p|4k|hdr|webrip|web[- ]?dl|bluray|brrip|hdtv|x264|x265|h\.?264|h\.?265|hevc|aac|dts|ddp?5\.?1|10bit)\b/gi, " ");
+
+    // limpia restos
     s = s.replace(/[^\p{L}\p{N}\s:'-]+/gu, " ");
-
-    // Normaliza espacios
     s = s.replace(/\s+/g, " ").trim();
 
-
-    return s.trim();
+    return s;
   }
 
-  function posterProxyUrl(rawTitle, kind){
-    const year = posterExtractYear(rawTitle);
-    const q = posterCleanTitle(rawTitle) || String(rawTitle||"").trim();
-    let u = `${API_BASE}/api/poster_img?title=${encodeURIComponent(q)}&type=${encodeURIComponent(kind)}`;
-    if(year) u += `&year=${encodeURIComponent(year)}`;
-    return u;
-  }
-
-  }
 
     
   // Reintento para posters (Render puede responder HTML mientras "despierta"; la imagen falla y dispararía onerror).
@@ -674,41 +659,47 @@ function posterHtml(iid, imgInfo){
       return { mode:"emoji", emoji, label:"DEPORTE", needsFetch:false };
     }
 
-    // VOD: siempre usamos el proxy /api/poster_img con título limpio (+year) para maximizar matches en TMDB
+    // VOD: poster real (https/http) o placeholder emoji (NO logo)
     if(type === "movie" || type === "series"){
+      const zu = (m.art && typeof m.art === "object") ? m.art : {};
       const rawTitle = String(m.title_clean || m.title || m.name || (m.info && (m.info.title || m.info.name)) || it.t || it.title || it.name || it.nombre || "").trim();
+      const titleClean = normalizePosterQueryTitle(rawTitle);
       const kind = (type === "series") ? "tv" : "movie";
+      const cacheKey = `${kind}:${titleClean.toLowerCase()}`;
 
       const placeholder = (type === "series")
         ? { mode:"emoji", emoji:"📺", label:"SERIE" }
         : { mode:"emoji", emoji:"🎬", label:"PELÍCULA" };
 
-      // Cache key normalizado: mismo póster para "Tenants (2024) lat" y "Tenants (2024) sub"
-      const qTitle = posterCleanTitle(rawTitle) || rawTitle;
-      const y = posterExtractYear(rawTitle);
-      const cacheKey = `${kind}:${qTitle.toLowerCase()}${y ? (":" + y) : ""}`;
-
-      let src = POSTER_LOCAL[cacheKey];
+      let src = POSTER_LOCAL[cacheKey] || zu.poster_img || zu.poster || zu.img || zu.url || zu.backdrop || it.img || "";
       if(isLogoUrl(src)) src = "";
       if(src && isHttpUrl(src) && !looksLikeImageUrl(src)) src = "";
 
-      if(!src){
-        src = posterProxyUrl(rawTitle, kind);
-        POSTER_LOCAL[cacheKey] = src;
+      const needsFetch = (!src && !!titleClean);
+
+      if(src && isHttpUrl(src)){
+        return {
+          mode:"img",
+          src,
+          fallbackHtml: `<div class="posterEmojiWrap"><div class="pe">${placeholder.emoji}</div><div class="pl">${placeholder.label}</div></div>`,
+          needsFetch:false,
+          titleClean,
+          kind,
+          cacheKey
+        };
       }
 
+      // Sin URL: placeholder emoji (y opcionalmente buscamos en Zuplo)
       return {
-        mode:"img",
-        src,
-        fallbackHtml: `<div class="posterEmojiWrap"><div class="pe">${placeholder.emoji}</div><div class="pl">${placeholder.label}</div></div>`,
-        needsFetch:false,
-        titleClean:qTitle,
+        ...placeholder,
+        needsFetch,
+        titleClean,
         kind,
         cacheKey
       };
     }
 
-// Fallback general
+    // Fallback general
     return { mode:"emoji", emoji:"🖼️", label:"", needsFetch:false };
   }
 
