@@ -691,18 +691,6 @@ function posterHtml(iid, imgInfo){
       try{
         const url = `${API_BASE}/api/poster?title=${encodeURIComponent(job.titleClean)}&type=${encodeURIComponent(job.kind)}`;
         const r = await fetch(url, {headers, cache:"no-store"});
-        if(r.status === 401){
-          // Si /api/poster está protegido por API_KEY y no está configurada en el frontend,
-          // usamos directamente el proxy de imagen (no requiere headers).
-          const proxy = `${API_BASE}/api/poster_img?title=${encodeURIComponent(job.titleClean)}&type=${encodeURIComponent(job.kind)}`;
-          POSTER_LOCAL[job.key] = proxy;
-          const posterBox = document.getElementById(`poster-${job.iid}`);
-          if(posterBox){
-            posterBox.setAttribute("data-fb", encodeURIComponent(String(posterBox.getAttribute("data-fb")||"").trim()));
-            posterBox.innerHTML = `<img id="img-${escapeHtml(job.iid)}" class="posterImg" loading="lazy" src="${escapeHtml(proxy)}" data-sbase="${escapeHtml(proxy)}" data-retry="0" alt="" onerror="retryPoster(this)"/>`;
-          }
-          continue;
-        }
         if(!r.ok) continue;
         const j = await r.json();
         const poster = (j && (j.poster_img || j.poster || j.img || j.url || j.backdrop || j.thumb)) ? String(j.poster_img || j.poster || j.img || j.url || j.backdrop || j.thumb) : "";
