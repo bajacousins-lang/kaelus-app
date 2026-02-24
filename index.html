@@ -548,7 +548,22 @@ function looksLikeImageUrl(u){
     return looksLikeImageUrl(s);
   }
 
-    
+
+  function normalizePosterQueryTitle(raw){
+    let s = String(raw||"").trim();
+
+    // Quitar ruido común en títulos del catálogo (solo para consulta a posters)
+    // Ejemplos: "Dual", "(2026)", "2026"
+    s = s.replace(/\bdual\b/ig, " ");
+    s = s.replace(/\((19|20)\d{2}\)/g, " ");
+    s = s.replace(/\[(19|20)\d{2}\]/g, " ");
+    s = s.replace(/\b(19|20)\d{2}\b/g, " ");
+
+    // Normalizar espacios
+    s = s.replace(/\s+/g, " ").trim();
+    return s;
+  }
+
   // Reintento para posters (Render puede responder HTML mientras "despierta"; la imagen falla y dispararía onerror).
   // Intentamos varias veces con cache-busting antes de rendirnos al fallback.
   function retryPoster(img){
@@ -644,8 +659,9 @@ function posterHtml(iid, imgInfo){
     if(type === "movie" || type === "series"){
       const zu = (m.art && typeof m.art === "object") ? m.art : {};
       const titleClean = String(m.title_clean || m.title || m.titulo || m.name || m.nombre || (m.info && (m.info.title || m.info.titulo || m.info.name || m.info.nombre)) || it.t || it.title || it.titulo || it.name || it.nombre || "").trim();
+      const qTitle = normalizePosterQueryTitle(titleClean);
       const kind = (type === "series") ? "tv" : "movie";
-      const cacheKey = `${kind}:${titleClean.toLowerCase()}`;
+      const cacheKey = `${kind}:${qTitle.toLowerCase()}`;
 
       const placeholder = (type === "series")
         ? { mode:"emoji", emoji:"📺", label:"SERIE" }
@@ -656,8 +672,8 @@ function posterHtml(iid, imgInfo){
 
       // Si no hay arte embebido, usa directamente el proxy del backend (TMDB) para que SIEMPRE haya poster en Películas/Series.
       // Esto evita depender de la cola async /api/poster (que puede quedar bloqueada por caché o datos incompletos).
-      if(!src && titleClean){
-        src = `${API_BASE}/api/poster_img?title=${encodeURIComponent(titleClean)}&type=${encodeURIComponent(kind)}`;
+      if(!src && qTitle){
+        src = `${API_BASE}/api/poster_img?title=${encodeURIComponent(qTitle)}&type=${encodeURIComponent(kind)}`;
       }
 
       const needsFetch = false;
