@@ -654,7 +654,13 @@ function posterHtml(iid, imgInfo){
       let src = POSTER_LOCAL[cacheKey] || zu.poster_img || zu.poster || zu.img || zu.url || zu.backdrop || "";
       if(!isPosterCandidate(src)) src = "";
 
-      const needsFetch = (!!titleClean && !src);
+      // Si no hay arte embebido, usa directamente el proxy del backend (TMDB) para que SIEMPRE haya poster en Películas/Series.
+      // Esto evita depender de la cola async /api/poster (que puede quedar bloqueada por caché o datos incompletos).
+      if(!src && titleClean){
+        src = `${API_BASE}/api/poster_img?title=${encodeURIComponent(titleClean)}&type=${encodeURIComponent(kind)}`;
+      }
+
+      const needsFetch = false;
 
       if(src && isHttpUrl(src)){
         return {
