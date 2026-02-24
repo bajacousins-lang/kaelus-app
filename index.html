@@ -504,7 +504,11 @@
     s = s.replace(/\b(19|20)\d{2}\b/g, " ");
 
     // quita tags típicos (idioma/subs)
-    s = s.replace(/\b(lat|latino|audio\s*latino|castellano|espa(?:ñ|n)ol|sub(?:titulado)?|vose|dual|multi)\b/ig, " ");
+    s = s.replace(/\b(lat|latino|audio\s*latino|cast|castellano|espa(?:ñ|n)ol|sub(?:titulado)?|vose|dual|multi)\b/ig, " ");
+    // quita extensiones sueltas que pudieron quedar (ej: "cast mp4")
+    s = s.replace(/\b(mp4|mkv|avi|ts)\b/ig, " ");
+    // quita marcadores de audio/subs abreviados
+    s = s.replace(/\b(sub|subs|subt|subtitulada|subtitulado|cast)\b/ig, " ");
 
     // quita calidad/codec
     s = s.replace(/\b(2160p|1080p|720p|480p|4k|uhd|hdr|hdrip|webrip|web[-\s]?dl|bluray|brrip|hdtv|x264|x265|h\.?264|h\.?265|hevc|aac|dts)\b/ig, " ");
