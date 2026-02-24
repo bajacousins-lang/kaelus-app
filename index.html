@@ -524,12 +524,28 @@
 function looksLikeImageUrl(u){
     const s = String(u||"").trim();
     if(!s) return false;
+
+    // reject common video/playlist urls
+    if(/\.(m3u8|mpd|mp4|mkv|avi|ts|m4v|mov|webm)(\?|#|$)/i.test(s)) return false;
+    if(/m3u8|\.mpd/i.test(s)) return false;
+
+    // our proxy is always an image response (or svg placeholder)
     if(s.includes("/api/poster_img")) return true;
-    // common extensions
+
+    // TMDB CDN
+    if(/image\.tmdb\.org/i.test(s)) return true;
+
+    // common image extensions
     if(/\.(jpg|jpeg|png|webp|gif|bmp|svg)(\?|#|$)/i.test(s)) return true;
-    // some CDNs use paths without extension
-    if(/\/images\//i.test(s) || /\/image\//i.test(s)) return true;
+
     return false;
+  }
+
+  function isPosterCandidate(u){
+    const s = String(u||"").trim();
+    if(!isHttpUrl(s)) return false;
+    if(isLogoUrl(s)) return false;
+    return looksLikeImageUrl(s);
   }
 
     
@@ -627,7 +643,7 @@ function posterHtml(iid, imgInfo){
     // VOD: poster real (https/http) o placeholder emoji (NO logo)
     if(type === "movie" || type === "series"){
       const zu = (m.art && typeof m.art === "object") ? m.art : {};
-      const titleClean = String(m.title_clean || m.title || m.name || (m.info && (m.info.title || m.info.name)) || it.t || it.title || it.name || it.nombre || "").trim();
+      const titleClean = String(m.title_clean || m.title || m.titulo || m.name || m.nombre || (m.info && (m.info.title || m.info.titulo || m.info.name || m.info.nombre)) || it.t || it.title || it.titulo || it.name || it.nombre || "").trim();
       const kind = (type === "series") ? "tv" : "movie";
       const cacheKey = `${kind}:${titleClean.toLowerCase()}`;
 
@@ -635,11 +651,10 @@ function posterHtml(iid, imgInfo){
         ? { mode:"emoji", emoji:"📺", label:"SERIE" }
         : { mode:"emoji", emoji:"🎬", label:"PELÍCULA" };
 
-      let src = POSTER_LOCAL[cacheKey] || zu.poster_img || zu.poster || zu.img || zu.url || zu.backdrop || it.img || "";
-      if(isLogoUrl(src)) src = "";
-      if(src && isHttpUrl(src) && !looksLikeImageUrl(src)) src = "";
+      let src = POSTER_LOCAL[cacheKey] || zu.poster_img || zu.poster || zu.img || zu.url || zu.backdrop || "";
+      if(!isPosterCandidate(src)) src = "";
 
-      const needsFetch = (!src && !!titleClean);
+      const needsFetch = (!!titleClean && !src);
 
       if(src && isHttpUrl(src)){
         return {
@@ -811,10 +826,10 @@ function posterHtml(iid, imgInfo){
       }
     }
     if(TAB === "movies"){
-      arr = arr.filter(x => (x.meta && x.meta.type === "movie") || (x.cat||"").includes("PEL"));
+      arr = arr.filter(x => (x.meta && x.meta.type === "movie") || String(x.cat||"").toUpperCase().includes("PEL"));
     }
     if(TAB === "series"){
-      arr = arr.filter(x => (x.meta && x.meta.type === "series") || (x.cat||"").includes("SERIES"));
+      arr = arr.filter(x => (x.meta && x.meta.type === "series") || String(x.cat||"").toUpperCase().includes("SER"));
     }
     if(TAB === "favs"){
       arr = arr.filter(x => isFav(itemId(x)));
