@@ -521,17 +521,6 @@
     return /^https?:\/\//i.test(s);
   }
 
-  function normalizeMediaType(t){
-    const s = String(t||"").toLowerCase().trim();
-    if(!s) return "";
-    if(s === "tv") return "series";
-    if(s.includes("seri")) return "series";
-    if(s.includes("pel") || s.includes("peli") || s.includes("mov") || s.includes("film")) return "movie";
-    if(s.includes("deport") || s.includes("sport")) return "sport";
-    return s;
-  }
-
-
 function looksLikeImageUrl(u){
     const s = String(u||"").trim();
     if(!s) return false;
@@ -605,7 +594,7 @@ function posterHtml(iid, imgInfo){
 
   function resolveCardImage(it){
     const m = it.meta || {};
-    let type = normalizeMediaType(m.type || "");
+    let type = String(m.type || "").toLowerCase();
 
     // Back-compat: si falta meta.type, inferimos por cat o por campos típicos
     if(!type){
@@ -638,7 +627,7 @@ function posterHtml(iid, imgInfo){
     // VOD: poster real (https/http) o placeholder emoji (NO logo)
     if(type === "movie" || type === "series"){
       const zu = (m.art && typeof m.art === "object") ? m.art : {};
-      const titleClean = String(m.title_clean || m.title || m.titulo || m.name || m.nombre || (m.info && (m.info.title || m.info.name)) || it.t || it.title || it.titulo || it.name || it.nombre || "").trim();
+      const titleClean = String(m.title_clean || m.title || m.name || (m.info && (m.info.title || m.info.name)) || it.t || it.title || it.name || it.nombre || "").trim();
       const kind = (type === "series") ? "tv" : "movie";
       const cacheKey = `${kind}:${titleClean.toLowerCase()}`;
 
@@ -683,7 +672,15 @@ function posterHtml(iid, imgInfo){
   function queuePosterFetch(iid, titleClean, kind, cacheKey){
     if(!titleClean) return;
     const key = cacheKey || `${kind}:${titleClean.toLowerCase()}`;
-    if(POSTER_LOCAL[key]) return;
+    const cached = POSTER_LOCAL[key];
+    if(cached){
+      // Si el cache tiene logo o algo que no parece imagen, lo ignoramos y lo volvemos a pedir
+      if(isLogoUrl(cached) || (isHttpUrl(cached) && !looksLikeImageUrl(cached))){
+        delete POSTER_LOCAL[key];
+      }else{
+        return;
+      }
+    }
     if(POSTER_QUEUE.some(x => x.key === key)) return;
 
     POSTER_QUEUE.push({iid, titleClean, kind, key});
@@ -804,7 +801,7 @@ function posterHtml(iid, imgInfo){
     arr = arr.filter(allowByVip);
 
     if(TAB === "sports"){
-      arr = arr.filter(x => (x.meta && normalizeMediaType(x.meta.type) === "sport") || (x.cat||"").includes("DEPORT") || (x.cat||"").includes("LaLiga") || (x.cat||"").includes("Liga MX"));
+      arr = arr.filter(x => (x.meta && x.meta.type === "sport") || (x.cat||"").includes("DEPORT") || (x.cat||"").includes("LaLiga") || (x.cat||"").includes("Liga MX"));
       const sub = sportsSub.value;
       if(sub){
         if(sub === "COMBATE") arr = arr.filter(x => (x.cat||"").includes("COMBATE"));
@@ -814,10 +811,10 @@ function posterHtml(iid, imgInfo){
       }
     }
     if(TAB === "movies"){
-      arr = arr.filter(x => (x.meta && normalizeMediaType(x.meta.type) === "movie") || (x.cat||"").includes("PEL"));
+      arr = arr.filter(x => (x.meta && x.meta.type === "movie") || (x.cat||"").includes("PEL"));
     }
     if(TAB === "series"){
-      arr = arr.filter(x => (x.meta && normalizeMediaType(x.meta.type) === "series") || (x.cat||"").includes("SERIES"));
+      arr = arr.filter(x => (x.meta && x.meta.type === "series") || (x.cat||"").includes("SERIES"));
     }
     if(TAB === "favs"){
       arr = arr.filter(x => isFav(itemId(x)));
@@ -1071,8 +1068,8 @@ function card(it){
     }
 
     // Movies/Series/All/Favs
-    const vod = arr.filter(x => x.meta && (normalizeMediaType(x.meta.type)==="movie" || normalizeMediaType(x.meta.type)==="series"));
-    const sports = arr.filter(x => x.meta && normalizeMediaType(x.meta.type)==="sport");
+    const vod = arr.filter(x => x.meta && (x.meta.type==="movie" || x.meta.type==="series"));
+    const sports = arr.filter(x => x.meta && x.meta.type==="sport");
 
     let html = "";
 
@@ -1087,8 +1084,8 @@ function card(it){
 
     if(vod.length){
       // Si estamos en movies/series, filtramos por tipo aquí para mantener agrupación uniforme
-      const vod2 = (TAB==="movies") ? vod.filter(x=>normalizeMediaType(x.meta.type)==="movie") :
-                   (TAB==="series") ? vod.filter(x=>normalizeMediaType(x.meta.type)==="series") : vod;
+      const vod2 = (TAB==="movies") ? vod.filter(x=>x.meta.type==="movie") :
+                   (TAB==="series") ? vod.filter(x=>x.meta.type==="series") : vod;
 
       const byDate = groupVOD(vod2);
 
