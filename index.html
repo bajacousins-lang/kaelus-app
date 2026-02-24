@@ -524,15 +524,72 @@
 function looksLikeImageUrl(u){
     const s = String(u||"").trim();
     if(!s) return false;
+
+    // reject common video/playlist urls
+    if(/\.(m3u8|mpd|mp4|mkv|avi|ts|m4v|mov|webm)(\?|#|$)/i.test(s)) return false;
+    if(/m3u8|\.mpd/i.test(s)) return false;
+
+    // our proxy is always an image response (or svg placeholder)
     if(s.includes("/api/poster_img")) return true;
-    // common extensions
+
+    // TMDB CDN
+    if(/image\.tmdb\.org/i.test(s)) return true;
+
+    // common image extensions
     if(/\.(jpg|jpeg|png|webp|gif|bmp|svg)(\?|#|$)/i.test(s)) return true;
-    // some CDNs use paths without extension
-    if(/\/images\//i.test(s) || /\/image\//i.test(s)) return true;
+
     return false;
   }
 
-    
+  function isPosterCandidate(u){
+    const s = String(u||"").trim();
+    if(!isHttpUrl(s)) return false;
+    if(isLogoUrl(s)) return false;
+    return looksLikeImageUrl(s);
+  }
+
+
+  function normalizePosterQueryTitle(raw){
+    // Normaliza títulos "sucios" del catálogo SOLO para consultar posters en TMDB:
+    // quita año, "dual", calidad/codec/audio, y basura típica.
+    let s = String(raw||"").trim();
+
+    // separadores comunes en releases
+    s = s.replace(/[._]+/g, " ");
+    s = s.replace(/\s*[-|•]+\s*/g, " ");
+
+    // helper: borrar paréntesis/corchetes si contienen ruido
+    function dropIfNoisy(inner){
+      return /\b((19|20)\d{2}|dual|multi|latino|castellano|sub(?:titulado)?|vose|audio|aac|ac3|dts|atmos|webrip|web[- ]?dl|bluray|brrip|hdrip|hdtv|dvdrip|cam|telesync|ts|x264|x265|hevc|h\.?264|h\.?265|hdr|sd|hd|fhd|uhd|480p|720p|1080p|2160p|4k|8k)\b/i.test(inner||"");
+    }
+    s = s.replace(/\(([^)]{0,80})\)/g, (m,inner)=> dropIfNoisy(inner) ? " " : m);
+    s = s.replace(/\[([^\]]{0,80})\]/g, (m,inner)=> dropIfNoisy(inner) ? " " : m);
+    s = s.replace(/\{([^}]{0,80})\}/g, (m,inner)=> dropIfNoisy(inner) ? " " : m);
+
+    // elimina tokens típicos
+    s = s.replace(/\b(dual(?:\s*audio)?|multi(?:\s*audio)?|latino|castellano|espa(?:ñ|n)ol|ingles|english|sub(?:titulado)?|vose|audio)\b/ig, " ");
+    s = s.replace(/\b(480p|720p|1080p|2160p|4k|8k|sd|hd|fhd|uhd)\b/ig, " ");
+    s = s.replace(/\b(x264|x265|hevc|h\.?264|h\.?265|hdr|webrip|web[- ]?dl|bluray|brrip|hdrip|hdtv|dvdrip|cam|telesync|ts|rip|remux|proper|repack|extended|unrated)\b/ig, " ");
+    s = s.replace(/\b(aac|ac3|dts|atmos|5\.1|7\.1)\b/ig, " ");
+
+    // quita año
+    s = s.replace(/\((19|20)\d{2}\)/g, " ");
+    s = s.replace(/\b(19|20)\d{2}\b/g, " ");
+
+    // corta basura después de separadores típicos si quedó muy largo
+    if(s.length > 80){
+      const cut = s.split(/\s{2,}|\s-\s|\s\/\s|\s\|\s|\s•\s/)[0];
+      if(cut && cut.length >= 3) s = cut;
+    }
+
+    // normalizar espacios/puntuación
+    s = s.replace(/["'`]/g, " ");
+    s = s.replace(/\s+/g, " ").trim();
+
+    // limita tamaño para TMDB
+    return s.slice(0, 120);
+  }
+
   // Reintento para posters (Render puede responder HTML mientras "despierta"; la imagen falla y dispararía onerror).
   // Intentamos varias veces con cache-busting antes de rendirnos al fallback.
   function retryPoster(img){
@@ -627,19 +684,25 @@ function posterHtml(iid, imgInfo){
     // VOD: poster real (https/http) o placeholder emoji (NO logo)
     if(type === "movie" || type === "series"){
       const zu = (m.art && typeof m.art === "object") ? m.art : {};
-      const titleClean = String(m.title_clean || m.title || m.name || (m.info && (m.info.title || m.info.name)) || it.t || it.title || it.name || it.nombre || "").trim();
+      const titleClean = String(m.title_clean || m.title || m.titulo || m.name || m.nombre || (m.info && (m.info.title || m.info.titulo || m.info.name || m.info.nombre)) || it.t || it.title || it.titulo || it.name || it.nombre || "").trim();
+      const qTitle = normalizePosterQueryTitle(titleClean) || String(titleClean||'').trim();
       const kind = (type === "series") ? "tv" : "movie";
-      const cacheKey = `${kind}:${titleClean.toLowerCase()}`;
+      const cacheKey = `${kind}:${qTitle.toLowerCase()}`;
 
       const placeholder = (type === "series")
         ? { mode:"emoji", emoji:"📺", label:"SERIE" }
         : { mode:"emoji", emoji:"🎬", label:"PELÍCULA" };
 
-      let src = POSTER_LOCAL[cacheKey] || zu.poster_img || zu.poster || zu.img || zu.url || zu.backdrop || it.img || "";
-      if(isLogoUrl(src)) src = "";
-      if(src && isHttpUrl(src) && !looksLikeImageUrl(src)) src = "";
+      let src = POSTER_LOCAL[cacheKey] || zu.poster_img || zu.poster || zu.img || zu.url || zu.backdrop || "";
+      if(!isPosterCandidate(src)) src = "";
 
-      const needsFetch = (!src && !!titleClean);
+      // Si no hay arte embebido, usa directamente el proxy del backend (TMDB) para que SIEMPRE haya poster en Películas/Series.
+      // Esto evita depender de la cola async /api/poster (que puede quedar bloqueada por caché o datos incompletos).
+      if(!src && qTitle){
+        src = `${API_BASE}/api/poster_img?title=${encodeURIComponent(qTitle)}&type=${encodeURIComponent(kind)}`;
+      }
+
+      const needsFetch = false;
 
       if(src && isHttpUrl(src)){
         return {
@@ -672,7 +735,15 @@ function posterHtml(iid, imgInfo){
   function queuePosterFetch(iid, titleClean, kind, cacheKey){
     if(!titleClean) return;
     const key = cacheKey || `${kind}:${titleClean.toLowerCase()}`;
-    if(POSTER_LOCAL[key]) return;
+    const cached = POSTER_LOCAL[key];
+    if(cached){
+      // Si el cache tiene logo o algo que no parece imagen, lo ignoramos y lo volvemos a pedir
+      if(isLogoUrl(cached) || (isHttpUrl(cached) && !looksLikeImageUrl(cached))){
+        delete POSTER_LOCAL[key];
+      }else{
+        return;
+      }
+    }
     if(POSTER_QUEUE.some(x => x.key === key)) return;
 
     POSTER_QUEUE.push({iid, titleClean, kind, key});
@@ -803,10 +874,10 @@ function posterHtml(iid, imgInfo){
       }
     }
     if(TAB === "movies"){
-      arr = arr.filter(x => (x.meta && x.meta.type === "movie") || (x.cat||"").includes("PEL"));
+      arr = arr.filter(x => (x.meta && x.meta.type === "movie") || String(x.cat||"").toUpperCase().includes("PEL"));
     }
     if(TAB === "series"){
-      arr = arr.filter(x => (x.meta && x.meta.type === "series") || (x.cat||"").includes("SERIES"));
+      arr = arr.filter(x => (x.meta && x.meta.type === "series") || String(x.cat||"").toUpperCase().includes("SER"));
     }
     if(TAB === "favs"){
       arr = arr.filter(x => isFav(itemId(x)));
