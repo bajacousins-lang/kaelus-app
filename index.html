@@ -478,22 +478,16 @@
     return false;
   }
 
-function isPosterProxyUrl(u){
-  return String(u||"").includes("/api/poster_img");
-}
-
-// "Bueno" = URL real de TMDB (si ya tenemos esto, no hace falta volver a buscar).
 function isGoodPosterSrc(u){
-  return String(u||"").includes("image.tmdb.org");
+  const s = String(u||"");
+  // Prefer TMDB direct or our proxy endpoint
+  if(s.includes("image.tmdb.org")) return true;
+  if(s.includes("/api/poster_img")) return true;
+  return false;
 }
 
-// Extrae año (si existe) del título original, para ayudar a TMDB y al cache-key.
-function extractYearFromRaw(raw){
-  const s = String(raw||"");
-  const m = s.match(/\b(19|20)\d{2}\b/);
-  return m ? parseInt(m[0], 10) : null;
-}
-// Cache local de posters (para no pedirlo cada render)
+
+  // Cache local de posters (para no pedirlo cada render)
   let POSTER_LOCAL = (function(){
     try{ return JSON.parse(localStorage.getItem("BCNTV_POSTER_CACHE")||"{}") || {}; }
     catch(e){ return {}; }
@@ -592,6 +586,12 @@ s = s.replace(/\b(?:ep(?:isodio)?|episodio|episode|cap(?:itulo)?|cap)\s*\d+\b/gi
   }
 
 // Convierte a forma "simple" para matching (sin tildes, minúsculas)
+
+function extractYearHint(raw){
+  const m = String(raw||"").match(/\b(19|20)\d{2}\b/);
+  return m ? m[0] : "";
+}
+
 function foldForMatch(s){
   return String(s||"")
     .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
@@ -728,58 +728,44 @@ function posterHtml(iid, imgInfo){
       return { mode:"emoji", emoji, label:"DEPORTE", needsFetch:false };
     }
 
-    // VOD: poster real (https/http) o placeholder emoji (NO logo)
+    // VOD: poster (usa proxy con candidatos/alias; cachea solo TMDB directo)
     if(type === "movie" || type === "series"){
       const zu = (m.art && typeof m.art === "object") ? m.art : {};
       const rawTitle = String(m.title_clean || m.title || m.name || (m.info && (m.info.title || m.info.name)) || it.t || it.title || it.name || it.nombre || "").trim();
-      const yearHint = extractYearFromRaw(rawTitle);
+      const yearHint = extractYearHint(rawTitle);
       const titleClean = normalizePosterQueryTitle(rawTitle);
       const kind = (type === "series") ? "tv" : "movie";
-      const cacheKey = `${kind}:${titleClean.toLowerCase()}`;
+      const cacheKey = `${kind}:${(titleClean||"").toLowerCase()}`;
 
       const placeholder = (type === "series")
         ? { mode:"emoji", emoji:"📺", label:"SERIE" }
         : { mode:"emoji", emoji:"🎬", label:"PELÍCULA" };
 
-      // Para VOD, priorizamos posters de TMDB. Si no hay cache de TMDB, usamos el proxy con candidatos/alias.
-      let src = POSTER_LOCAL[cacheKey] || "";
-      if(isLogoUrl(src)) src = "";
-      if(src && isHttpUrl(src) && !isPosterProxyUrl(src) && !looksLikeImageUrl(src)) src = "";
+      if(!titleClean){
+        return { ...placeholder, needsFetch:false, titleClean:"", kind, cacheKey };
+      }
 
-      // Si no tenemos imagen usable, usamos el proxy de posters con el mejor candidato (incluye alias).
-      if(!src && titleClean){
-        const cand0 = (posterTitleCandidates(titleClean, kind) || [titleClean])[0] || titleClean;
+      // Preferimos cache solo si es URL directa de TMDB (evita quedar pegado a placeholder/proxy viejo)
+      let cached = POSTER_LOCAL[cacheKey] || "";
+      if(!(cached && String(cached).includes("image.tmdb.org"))) cached = "";
+
+      // Elegimos el mejor candidato (incluye alias para casos como "El clan de las dagas")
+      const candidates = posterTitleCandidates(titleClean, kind) || [titleClean];
+      const cand0 = candidates[0] || titleClean;
+
+      // Imagen inicial: cache TMDB o proxy (que puede devolver poster real vía TMDB).
+      // NOTA: si el proxy devuelve placeholder, igual dispararemos fetch para intentar cache TMDB directo.
+      let src = cached;
+      if(!src){
         src = `${API_BASE}/api/poster_img?title=${encodeURIComponent(cand0)}&type=${encodeURIComponent(kind)}${yearHint ? `&year=${yearHint}` : ""}`;
       }
 
-      // Solo consideramos "ok" si ya es URL real de TMDB; el proxy puede ser placeholder.
-      const needsFetch = (!!titleClean && (!src || !isGoodPosterSrc(src)));
+      const needsFetch = !cached; // si no hay cache TMDB directo, intentamos obtenerlo en background
 
-      if(src && isHttpUrl(src)){
-        return {
-          mode:"img",
-          src,
-          fallbackHtml: `<div class="posterEmojiWrap"><div class="pe">${placeholder.emoji}</div><div class="pl">${placeholder.label}</div></div>`,
-          needsFetch,
-          titleClean,
-          kind,
-          cacheKey
-        };
-      }
-
-      // Sin URL: placeholder emoji
       return {
-        ...placeholder,
-        needsFetch,
-        titleClean,
-        kind,
-        cacheKey
-      };
-    }
-
-      // Sin URL: placeholder emoji (y opcionalmente buscamos en Zuplo)
-      return {
-        ...placeholder,
+        mode:"img",
+        src,
+        fallbackHtml: `<div class="posterEmojiWrap"><div class="pe">${placeholder.emoji}</div><div class="pl">${placeholder.label}</div></div>`,
         needsFetch,
         titleClean,
         kind,
@@ -1305,7 +1291,6 @@ const datesAll = [...byDate.keys()].sort((a,b)=>{
   }
 
   fetchData();
-  setInterval(fetchData, 15 * 60 * 1000);
-</script>
+  setInterval(fetchData, 15 * 60 * 1000);</script>
 </body>
 </html>
