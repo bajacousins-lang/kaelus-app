@@ -581,7 +581,10 @@ s = s.replace(/\b(?:ep(?:isodio)?|episodio|episode|cap(?:itulo)?|cap)\s*\d+\b/gi
     s = s.replace(/[^\p{L}\p{N}\s:'-]+/gu, " ");
     s = s.replace(/\s+/g, " ").trim();
 
-    
+
+    return s;
+  }
+
 // Convierte a forma "simple" para matching (sin tildes, minúsculas)
 function foldForMatch(s){
   return String(s||"")
@@ -625,8 +628,6 @@ function posterTitleCandidates(titleClean, kind){
   }
   return deduped;
 }
-return s;
-  }
 
 
     
