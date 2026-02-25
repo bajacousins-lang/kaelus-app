@@ -566,6 +566,32 @@ function looksLikeImageUrl(u){
     return s;
   }
 
+  function extractYear(raw){
+    const s = String(raw || '');
+    const m = s.match(/\b(19|20)\d{2}\b/);
+    return m ? m[0] : '';
+  }
+
+  // Alias map para títulos que en TMDB tienen nombre distinto al que viene en tu catálogo.
+  // Puedes seguir agregando entradas aquí (clave en minúsculas y sin año/tags).
+  function resolvePosterAlias(cleanTitle, year){
+    const t = String(cleanTitle || '').trim();
+    if(!t) return '';
+    const key = t.toLowerCase();
+    const MAP = {
+      // "El clan de las dagas" (2017) corresponde a "Brotherhood of Blades II: The Infernal Battlefield".
+      // Fuentes: IMDb/FilmAffinity.
+      'el clan de las dagas': { '2017': 'Brotherhood of Blades II: The Infernal Battlefield', '*': 'Brotherhood of Blades II: The Infernal Battlefield' },
+
+      // Casos típicos donde el título en español no matchea bien en TMDB
+      'el agente impostor': { '1967': 'The Double Man', '*': 'The Double Man' },
+      'descubriendo la amistad': { '2003': 'The Station Agent', '*': 'The Station Agent' },
+    };
+    const row = MAP[key];
+    if(!row) return t;
+    return row[String(year||'')] || row['*'] || t;
+  }
+
 
     
   // Reintento para posters (Render puede responder HTML mientras "despierta"; la imagen falla y dispararía onerror).
@@ -663,9 +689,11 @@ function posterHtml(iid, imgInfo){
     if(type === "movie" || type === "series"){
       const zu = (m.art && typeof m.art === "object") ? m.art : {};
       const rawTitle = String(m.title_clean || m.title || m.name || (m.info && (m.info.title || m.info.name)) || it.t || it.title || it.name || it.nombre || "").trim();
-      const titleClean = normalizePosterQueryTitle(rawTitle);
+      const year = extractYear(rawTitle);
+      let titleClean = normalizePosterQueryTitle(rawTitle);
+      titleClean = resolvePosterAlias(titleClean, year);
       const kind = (type === "series") ? "tv" : "movie";
-      const cacheKey = `${kind}:${titleClean.toLowerCase()}`;
+      const cacheKey = `${kind}:${titleClean.toLowerCase()}:${year||''}`;
 
       const placeholder = (type === "series")
         ? { mode:"emoji", emoji:"📺", label:"SERIE" }
@@ -675,7 +703,12 @@ function posterHtml(iid, imgInfo){
       if(isLogoUrl(src)) src = "";
       if(src && isHttpUrl(src) && !looksLikeImageUrl(src)) src = "";
 
-      const needsFetch = (!src && !!titleClean);
+      if(!src && !!titleClean){
+        const yq = year ? `&year=${encodeURIComponent(year)}` : "";
+        src = `${API_BASE}/api/poster_img?title=${encodeURIComponent(titleClean)}&type=${kind}${yq}`;
+      }
+
+      const needsFetch = false;
 
       if(src && isHttpUrl(src)){
         return {
