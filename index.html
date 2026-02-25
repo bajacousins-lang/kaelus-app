@@ -547,6 +547,12 @@ function looksLikeImageUrl(u){
     // elimina bloques entre paréntesis/corchetes/llaves (año, idioma, tags)
     s = s.replace(/\[[^\]]*\]|\([^\)]*\)|\{[^\}]*\}/g, " ");
 
+    // elimina marcadores de temporada/episodio (incluye typo "Temproada")
+    // ejemplos: "Temporada 8 episodio 7", "Temp 2 Ep 7", "S08E07", "cap 7", "episodio7"
+    s = s.replace(/\bS\d{1,2}\s*E\d{1,2}\b/gi, " ");
+    s = s.replace(/\b(?:temp(?:orada|roada)?|season)\s*\d+\b/gi, " ");
+    s = s.replace(/\b(?:episodio|episode|ep|cap(?:i?tulo)?|chap(?:ter)?)\s*\d+\b/gi, " ");
+
     // corta desde "Dir"/"Director" (muchas veces viene al final)
     s = s.replace(/\b(dir(?:ector)?)\b[\s:._-]+.*$/i, " ");
 
@@ -563,70 +569,108 @@ function looksLikeImageUrl(u){
     s = s.replace(/[^\p{L}\p{N}\s:'-]+/gu, " ");
     s = s.replace(/\s+/g, " ").trim();
 
+    // aliases conocidos para TMDB (cuando el título del catálogo no coincide con el index de TMDB)
+    const key = s.toLowerCase();
+    if(key === "hells paradise" || key === "hell's paradise"){
+      return "Hell's Paradise: Jigokuraku";
+    }
+
     return s;
   }
 
 
-  // Extrae año (si existe) del título original (ej. "El clan ... 2017 lat")
-  function extractYear(raw){
-    const m = String(raw||"").match(/\b(19|20)\d{2}\b/);
-    return m ? m[0] : "";
+
+// ==== Poster matching helpers (TMDB) ====
+// Extrae año (si existe) del título original (ej. "El clan ... 2017 lat")
+function extractYear(raw){
+  const m = String(raw||"").match(/\b(19|20)\d{2}\b/);
+  return m ? m[0] : "";
+}
+
+// Normaliza para comparar (minúsculas + sin acentos + espacios colapsados)
+function normKey(s){
+  return String(s||"")
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s:'-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Alias para títulos que TMDB no indexa bien en ES o que chocan con homónimos.
+// Clave: "<titulo_normalizado>|<año opcional>"
+const POSTER_ALIAS = {
+  "el clan de las dagas|2017": [
+    "Brotherhood of Blades II: The Infernal Battlefield",
+    "Brotherhood of Blades 2: The Infernal Battlefield",
+    "Brotherhood of Blades II",
+    "Brotherhood of Blades 2",
+    "绣春刀II：修罗战场"
+  ],
+  "el clan de las dagas": [
+    "Brotherhood of Blades II: The Infernal Battlefield",
+    "Brotherhood of Blades 2: The Infernal Battlefield",
+    "Brotherhood of Blades II",
+    "Brotherhood of Blades 2",
+    "绣春刀II：修罗战场"
+  ],
+
+  // Anime / series names
+  "hells paradise": ["Hell's Paradise: Jigokuraku"],
+  "hell's paradise": ["Hell's Paradise: Jigokuraku"],
+};
+
+function uniqueList(arr){
+  const out = [];
+  const seen = new Set();
+  for(const x of (arr||[])){
+    const s = String(x||"").trim();
+    if(!s) continue;
+    const k = s.toLowerCase();
+    if(seen.has(k)) continue;
+    seen.add(k);
+    out.push(s);
   }
+  return out;
+}
 
-  // Normaliza para comparar (minúsculas + sin acentos + espacios colapsados)
-  function normKey(s){
-    return String(s||"")
-      .toLowerCase()
-      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9\s:'-]+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-  }
+// Devuelve lista de candidatos para buscar poster (primero el título limpio, luego aliases).
+function posterCandidates(titleClean, rawTitle, kind){
+  const y = extractYear(rawTitle);
+  const k1 = normKey(titleClean) + (y ? ("|" + y) : "");
+  const k2 = normKey(titleClean);
+  const al = (POSTER_ALIAS[k1] || POSTER_ALIAS[k2] || []);
+  return uniqueList([titleClean, ...al]);
+}
 
-  // Alias para títulos que TMDB no indexa bien en ES o que chocan con homónimos.
-  // Clave: "<titulo_normalizado>|<año opcional>"
-  const POSTER_ALIAS = {
-    "el clan de las dagas|2017": [
-      "Brotherhood of Blades II: The Infernal Battlefield",
-      "Brotherhood of Blades 2: The Infernal Battlefield",
-      "Brotherhood of Blades 2",
-      "Brotherhood of Blades II",
-      "绣春刀II：修罗战场"
-    ],
-    // fallback sin año (por si el año no viene)
-    "el clan de las dagas": [
-      "Brotherhood of Blades II: The Infernal Battlefield",
-      "Brotherhood of Blades 2: The Infernal Battlefield",
-      "Brotherhood of Blades 2",
-      "Brotherhood of Blades II",
-      "绣春刀II：修罗战场"
-    ],
-  };
+const POSTER_MISS_PREFIX = "__MISS__:";
+const POSTER_MISS_TTL_MS = 6 * 60 * 60 * 1000; // 6 horas
 
-  function uniqueList(arr){
-    const out = [];
-    const seen = new Set();
-    for(const x of (arr||[])){
-      const s = String(x||"").trim();
-      if(!s) continue;
-      const k = s.toLowerCase();
-      if(seen.has(k)) continue;
-      seen.add(k);
-      out.push(s);
-    }
-    return out;
-  }
+function isPosterMiss(val){
+  return String(val||"").startsWith(POSTER_MISS_PREFIX);
+}
+function missTs(val){
+  const s = String(val||"");
+  if(!isPosterMiss(s)) return 0;
+  const n = parseInt(s.slice(POSTER_MISS_PREFIX.length), 10);
+  return Number.isFinite(n) ? n : 0;
+}
+function isFreshMiss(val){
+  const ts = missTs(val);
+  if(!ts) return false;
+  return (Date.now() - ts) < POSTER_MISS_TTL_MS;
+}
 
-  // Devuelve lista de candidatos para buscar poster (primero el título limpio, luego aliases).
-  function posterCandidates(titleClean, rawTitle, kind){
-    const y = extractYear(rawTitle);
-    const k1 = normKey(titleClean) + (y ? ("|" + y) : "");
-    const k2 = normKey(titleClean);
-    const al = (POSTER_ALIAS[k1] || POSTER_ALIAS[k2] || []);
-    // Siempre probamos primero el limpio, luego alias
-    return uniqueList([titleClean, ...al]);
-  }
-
+function isBadCachedPoster(u){
+  const s = String(u||"").trim();
+  if(!s) return true;
+  if(isPosterMiss(s)) return !isFreshMiss(s); // si expiró, lo tratamos como malo para reintentar
+  // No cacheamos proxies porque pueden ser placeholders y no sabemos distinguirlos sin bajar la imagen
+  if(s.includes("/api/poster_img")) return true;
+  if(isLogoUrl(s)) return true;
+  if(isHttpUrl(s) && !looksLikeImageUrl(s)) return true;
+  return false;
+}
 
 
     
@@ -724,31 +768,54 @@ function posterHtml(iid, imgInfo){
     // VOD: poster real (https/http) o placeholder emoji (NO logo)
     if(type === "movie" || type === "series"){
       const zu = (m.art && typeof m.art === "object") ? m.art : {};
-      const rawTitle = String(m.title_clean || m.title || m.name || (m.info && (m.info.title || m.info.name)) || it.t || it.title || it.name || it.nombre || "").trim();
+      const rawTitle = String(
+        m.title_clean || m.title || m.name ||
+        (m.info && (m.info.title || m.info.name)) ||
+        it.t || it.title || it.name || it.nombre || ""
+      ).trim();
+
       const titleClean = normalizePosterQueryTitle(rawTitle);
       const kind = (type === "series") ? "tv" : "movie";
       const year = extractYear(rawTitle);
-      const cacheKey = `${kind}:${titleClean.toLowerCase()}${year ? (":y" + year) : ""}`;
       const candidates = posterCandidates(titleClean, rawTitle, kind);
+
+      // Cache key normalizado (con año si existe, ayuda con homónimos)
+      const cacheKey = `${kind}:${normKey(titleClean)}${year ? ("|" + year) : ""}`;
 
       const placeholder = (type === "series")
         ? { mode:"emoji", emoji:"📺", label:"SERIE" }
         : { mode:"emoji", emoji:"🎬", label:"PELÍCULA" };
 
-      // Para VOD preferimos SIEMPRE posters desde TMDB (via backend) para consistencia.
-      // Solo usamos cache local si ya existe.
+      // 1) Intenta cache local (solo si es poster "real" de TMDB)
       let src = POSTER_LOCAL[cacheKey] || "";
-      if(isLogoUrl(src)) src = "";
-      if(src && isHttpUrl(src) && !looksLikeImageUrl(src)) src = "";
+      if(src && isBadCachedPoster(src)){
+        delete POSTER_LOCAL[cacheKey];
+        src = "";
+      }
 
-      const needsFetch = (!src && !!titleClean);
+      // 2) Si no hay cache, usa arte embebido SOLO si parece imagen real (como "preview"),
+      //    pero aun así intentaremos mejorar con TMDB en background.
+      let preview = "";
+      if(!src){
+        preview = zu.poster_img || zu.poster || zu.img || zu.url || zu.backdrop || it.img || "";
+        if(isLogoUrl(preview)) preview = "";
+        if(preview && isHttpUrl(preview) && !looksLikeImageUrl(preview)) preview = "";
+        if(preview && isHttpUrl(preview)) src = preview;
+      }
+
+      // Evita refetch infinito si marcamos MISS recientemente
+      const existing = POSTER_LOCAL[cacheKey];
+      const hasFreshMiss = existing && isPosterMiss(existing) && isFreshMiss(existing);
+
+      // Hacemos fetch si tenemos título, y no hay poster TMDB cacheado, y no hay MISS fresco.
+      const needsFetch = (!!titleClean) && !hasFreshMiss && (!POSTER_LOCAL[cacheKey] || isBadCachedPoster(POSTER_LOCAL[cacheKey]));
 
       if(src && isHttpUrl(src)){
         return {
           mode:"img",
           src,
           fallbackHtml: `<div class="posterEmojiWrap"><div class="pe">${placeholder.emoji}</div><div class="pl">${placeholder.label}</div></div>`,
-          needsFetch:false,
+          needsFetch,
           titleClean,
           kind,
           cacheKey,
@@ -757,7 +824,6 @@ function posterHtml(iid, imgInfo){
         };
       }
 
-      // Sin URL: placeholder emoji (y opcionalmente buscamos en Zuplo)
       return {
         ...placeholder,
         needsFetch,
@@ -775,86 +841,121 @@ function posterHtml(iid, imgInfo){
 
 
 
-  function queuePosterFetch(iid, candidates, kind, cacheKey){
+  function queuePosterFetch(iid, candidates, kind, cacheKey, year){
+  const cands = Array.isArray(candidates) ? candidates : [String(candidates||"")];
+  const first = (cands && cands.length) ? String(cands[0]||"").trim() : "";
+  if(!first) return;
 
-    const titleClean = (candidates && candidates.length) ? String(candidates[0]||"") : "";
-    if(!titleClean) return;
-    const key = cacheKey || `${kind}:${titleClean.toLowerCase()}`;
-    const cached = POSTER_LOCAL[key];
-    if(cached){
-      // Si el cache guardó un placeholder/proxy o algo raro, lo invalidamos y reintentamos.
-      if(String(cached).includes('/api/poster_img') || isLogoUrl(cached) || (isHttpUrl(cached) && !looksLikeImageUrl(cached))){
-        delete POSTER_LOCAL[key];
+  const y = String(year || "").trim();
+  const key = cacheKey || `${kind}:${normKey(first)}${y ? ("|" + y) : ""}`;
+
+  const cached = POSTER_LOCAL[key];
+  // Si ya tenemos un poster "real" cacheado, no hacemos nada.
+  if(cached && !isBadCachedPoster(cached) && !isPosterMiss(cached)) return;
+  // Si hay MISS fresco, no insistimos
+  if(cached && isPosterMiss(cached) && isFreshMiss(cached)) return;
+  // Si está malo o MISS expirado, lo limpiamos y reintentamos
+  if(cached && (isBadCachedPoster(cached) || (isPosterMiss(cached) && !isFreshMiss(cached)))){
+    delete POSTER_LOCAL[key];
+  }
+
+  if(POSTER_QUEUE.some(x => x.key === key)) return;
+
+  POSTER_QUEUE.push({iid, candidates: cands, kind, key, year: y});
+  if(!POSTER_TIMER) POSTER_TIMER = setTimeout(processPosterQueue, 60);
+}
+
+async function processPosterQueue(){
+  POSTER_TIMER = null;
+  const batch = POSTER_QUEUE.splice(0, 10);
+  if(!batch.length) return;
+
+  const headers = {};
+  if(API_KEY) headers["x-api-key"] = API_KEY;
+
+  for(const job of batch){
+    try{
+      const cands = (job.candidates && job.candidates.length) ? job.candidates : [];
+      let foundDirect = "";
+      let foundProxy = "";
+
+      for(const cand0 of cands){
+        const cand = String(cand0||"").trim();
+        if(!cand) continue;
+
+        const yq = job.year ? `&year=${encodeURIComponent(job.year)}` : "";
+        const url = `${API_BASE}/api/poster?title=${encodeURIComponent(cand)}&type=${encodeURIComponent(job.kind)}${yq}`;
+
+        let r;
+        try{
+          r = await fetch(url, {headers, cache:"no-store"});
+        }catch(_){
+          continue;
+        }
+        if(!r || !r.ok) continue;
+
+        let j = null;
+        try{
+          j = await r.json();
+        }catch(_){
+          continue;
+        }
+        if(!j || typeof j !== "object") continue;
+
+        // Preferimos posters directos de TMDB (img/backdrop)
+        const direct = String(j.img || j.backdrop || "").trim();
+        if(direct && isHttpUrl(direct) && looksLikeImageUrl(direct) && !isLogoUrl(direct)){
+          foundDirect = direct;
+          break;
+        }
+
+        // Fallback (no cache): a veces el backend devuelve un proxy usable
+        const proxy = String(j.poster_img || j.poster || j.url || j.thumb || "").trim();
+        if(proxy && isHttpUrl(proxy) && looksLikeImageUrl(proxy) && !isLogoUrl(proxy)){
+          foundProxy = proxy;
+        }
+      }
+
+      // Cacheamos solo si es directo (evita quedar "pegado" a placeholders).
+      if(foundDirect){
+        POSTER_LOCAL[job.key] = foundDirect;
+      }else if(!foundProxy){
+        // Marcamos MISS para no insistir en cada render
+        POSTER_LOCAL[job.key] = POSTER_MISS_PREFIX + Date.now();
+      }
+
+      const useSrc = foundDirect || foundProxy;
+      if(!useSrc) continue;
+
+      const posterBox = document.getElementById(`poster-${job.iid}`);
+      if(!posterBox) continue;
+
+      const imgEl = posterBox.querySelector("img");
+      if(imgEl){
+        imgEl.setAttribute("src", useSrc);
+        imgEl.setAttribute("data-sbase", useSrc);
+        imgEl.setAttribute("data-retry", "0");
       }else{
-        return;
+        const placeholderHtml = (job.kind === "tv")
+          ? `<div class="posterEmojiWrap"><div class="pe">📺</div><div class="pl">SERIE</div></div>`
+          : `<div class="posterEmojiWrap"><div class="pe">🎬</div><div class="pl">PELÍCULA</div></div>`;
+        posterBox.setAttribute("data-fb", encodeURIComponent(String(placeholderHtml||"").trim()));
+        posterBox.innerHTML =
+          `<img id="img-${escapeHtml(job.iid)}" class="posterImg" loading="lazy" src="${escapeHtml(useSrc)}" data-sbase="${escapeHtml(useSrc)}" data-retry="0" alt="" ` +
+          `onerror="retryPoster(this)"/>`;
       }
+    }catch(e){
+      console.warn("poster fetch error", e);
     }
-    if(POSTER_QUEUE.some(x => x.key === key)) return;
-
-    POSTER_QUEUE.push({iid, candidates: (candidates && candidates.length) ? candidates : [titleClean], kind, key});
-    if(!POSTER_TIMER) POSTER_TIMER = setTimeout(processPosterQueue, 60);
   }
 
-  async function processPosterQueue(){
-    POSTER_TIMER = null;
-    const batch = POSTER_QUEUE.splice(0, 10);
-    if(!batch.length) return;
-
-    const headers = {};
-    if(API_KEY) headers["x-api-key"] = API_KEY;
-
-    for(const job of batch){
-      try{
-        const cands = (job.candidates && job.candidates.length) ? job.candidates : [];
-        let found = "";
-
-        for(const cand of cands){
-          if(!cand) continue;
-          const url = `${API_BASE}/api/poster?title=${encodeURIComponent(cand)}&type=${encodeURIComponent(job.kind)}`;
-          const r = await fetch(url, {headers, cache:"no-store"});
-          if(!r.ok) continue;
-          const j = await r.json();
-
-          // Preferimos poster directo de TMDB (img/backdrop) para evitar guardar placeholders.
-          const candidatePoster = (j && (j.img || j.backdrop || j.poster || j.url || j.thumb)) ? String(j.img || j.backdrop || j.poster || j.url || j.thumb) : "";
-          if(candidatePoster && isHttpUrl(candidatePoster) && looksLikeImageUrl(candidatePoster) && !isLogoUrl(candidatePoster)){
-            found = candidatePoster;
-            break;
-          }
-        }
-
-        if(!found) continue;
-
-        POSTER_LOCAL[job.key] = found;
-
-        const posterBox = document.getElementById(`poster-${job.iid}`);
-        if(!posterBox) continue;
-
-        const imgEl = posterBox.querySelector("img");
-        if(imgEl){
-          imgEl.setAttribute("src", found);
-          imgEl.setAttribute("data-sbase", found);
-          imgEl.setAttribute("data-retry", "0");
-        }else{
-          // si todavía está en placeholder, reemplazamos por <img>
-          const placeholderHtml = (job.kind === "tv") ? `<div class=\"posterEmojiWrap\"><div class=\"pe\">📺</div><div class=\"pl\">SERIE</div></div>` : `<div class=\"posterEmojiWrap\"><div class=\"pe\">🎬</div><div class=\"pl\">PELÍCULA</div></div>`;
-          posterBox.setAttribute("data-fb", encodeURIComponent(String(placeholderHtml||"").trim()));
-          posterBox.innerHTML =
-            `<img id="img-${escapeHtml(job.iid)}" class="posterImg" loading="lazy" src="${escapeHtml(found)}" data-sbase="${escapeHtml(found)}" data-retry="0" alt="" ` +
-            `onerror="retryPoster(this)"/>`;
-        }
-      }catch(e){
-        console.warn("poster fetch error", e);
-      }
-    }
-
-    savePosterLocal();
-    if(POSTER_QUEUE.length) POSTER_TIMER = setTimeout(processPosterQueue, 120);
-  }
+  savePosterLocal();
+  if(POSTER_QUEUE.length) POSTER_TIMER = setTimeout(processPosterQueue, 120);
+}
 
 
 
-  function escapeRegExp(s){
+function escapeRegExp(s){
     return (s||"").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 
@@ -1081,7 +1182,7 @@ function card(it){
 
     const imgInfo = resolveCardImage(it);
     if(imgInfo && imgInfo.needsFetch){
-      queuePosterFetch(iid, imgInfo.candidates || [imgInfo.titleClean], imgInfo.kind, imgInfo.cacheKey);
+      queuePosterFetch(iid, (imgInfo.candidates || [imgInfo.titleClean]), imgInfo.kind, imgInfo.cacheKey, (imgInfo.year || ""));
     }
 
     const favOn = isFav(iid);
