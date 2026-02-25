@@ -544,6 +544,12 @@ function looksLikeImageUrl(u){
     // separadores típicos en releases
     s = s.replace(/[_]+/g, " ").replace(/[.]+/g, " ");
 
+    // elimina anotaciones de temporada/episodio (ej. "Temporada 8 episodio 7", "S08E07", "Temproada 2 ep 7")
+    s = s.replace(/\bS\s*(\d{1,2})\s*E\s*(\d{1,3})\b/ig, " ");
+    s = s.replace(/\bS(\d{1,2})E(\d{1,3})\b/ig, " ");
+    s = s.replace(/\b(temporada|temp(?:orada)?|temproada|season)\s*\d{1,2}\b/ig, " ");
+    s = s.replace(/\b(episodio|epis\.?|episode|ep\.?|cap(?:itulo|ítulo)?|cap\.?)\s*\d{1,3}\b/ig, " ");
+
     // elimina bloques entre paréntesis/corchetes/llaves (año, idioma, tags)
     s = s.replace(/\[[^\]]*\]|\([^\)]*\)|\{[^\}]*\}/g, " ");
 
@@ -563,33 +569,25 @@ function looksLikeImageUrl(u){
     s = s.replace(/[^\p{L}\p{N}\s:'-]+/gu, " ");
     s = s.replace(/\s+/g, " ").trim();
 
-    return s;
-  }
 
-  function extractYear(raw){
-    const s = String(raw || '');
-    const m = s.match(/\b(19|20)\d{2}\b/);
-    return m ? m[0] : '';
-  }
-
-  // Alias map para títulos que en TMDB tienen nombre distinto al que viene en tu catálogo.
-  // Puedes seguir agregando entradas aquí (clave en minúsculas y sin año/tags).
-  function resolvePosterAlias(cleanTitle, year){
-    const t = String(cleanTitle || '').trim();
-    if(!t) return '';
+  // Alias para títulos cuyo nombre en el catálogo no coincide con TMDB.
+  // Clave: título limpio en minúsculas (sin temporada/episodio/año/tags).
+  function resolvePosterAlias(cleanTitle, kind){
+    const t = String(cleanTitle || "").trim();
+    if(!t) return "";
     const key = t.toLowerCase();
-    const MAP = {
-      // "El clan de las dagas" (2017) corresponde a "Brotherhood of Blades II: The Infernal Battlefield".
-      // Fuentes: IMDb/FilmAffinity.
-      'el clan de las dagas': { '2017': 'Brotherhood of Blades II: The Infernal Battlefield', '*': 'Brotherhood of Blades II: The Infernal Battlefield' },
 
-      // Casos típicos donde el título en español no matchea bien en TMDB
-      'el agente impostor': { '1967': 'The Double Man', '*': 'The Double Man' },
-      'descubriendo la amistad': { '2003': 'The Station Agent', '*': 'The Station Agent' },
+    // Puedes agregar más aliases aquí si detectas más casos.
+    const MAP = {
+      // Anime: TMDB suele indexar como "Hell's Paradise: Jigokuraku"
+      "hells paradise": "Hell's Paradise: Jigokuraku",
+      "hell's paradise": "Hell's Paradise: Jigokuraku",
     };
-    const row = MAP[key];
-    if(!row) return t;
-    return row[String(year||'')] || row['*'] || t;
+
+    return MAP[key] || t;
+  }
+
+    return s;
   }
 
 
@@ -689,11 +687,10 @@ function posterHtml(iid, imgInfo){
     if(type === "movie" || type === "series"){
       const zu = (m.art && typeof m.art === "object") ? m.art : {};
       const rawTitle = String(m.title_clean || m.title || m.name || (m.info && (m.info.title || m.info.name)) || it.t || it.title || it.name || it.nombre || "").trim();
-      const year = extractYear(rawTitle);
-      let titleClean = normalizePosterQueryTitle(rawTitle);
-      titleClean = resolvePosterAlias(titleClean, year);
+      const titleClean = normalizePosterQueryTitle(rawTitle);
       const kind = (type === "series") ? "tv" : "movie";
-      const cacheKey = `${kind}:${titleClean.toLowerCase()}:${year||''}`;
+      const posterTitle = resolvePosterAlias(titleClean, kind);
+      const cacheKey = `${kind}:${posterTitle.toLowerCase()}`;
 
       const placeholder = (type === "series")
         ? { mode:"emoji", emoji:"📺", label:"SERIE" }
@@ -703,12 +700,7 @@ function posterHtml(iid, imgInfo){
       if(isLogoUrl(src)) src = "";
       if(src && isHttpUrl(src) && !looksLikeImageUrl(src)) src = "";
 
-      if(!src && !!titleClean){
-        const yq = year ? `&year=${encodeURIComponent(year)}` : "";
-        src = `${API_BASE}/api/poster_img?title=${encodeURIComponent(titleClean)}&type=${kind}${yq}`;
-      }
-
-      const needsFetch = false;
+      const needsFetch = (!src && !!posterTitle);
 
       if(src && isHttpUrl(src)){
         return {
@@ -717,6 +709,7 @@ function posterHtml(iid, imgInfo){
           fallbackHtml: `<div class="posterEmojiWrap"><div class="pe">${placeholder.emoji}</div><div class="pl">${placeholder.label}</div></div>`,
           needsFetch:false,
           titleClean,
+          posterTitle,
           kind,
           cacheKey
         };
@@ -727,6 +720,7 @@ function posterHtml(iid, imgInfo){
         ...placeholder,
         needsFetch,
         titleClean,
+        posterTitle,
         kind,
         cacheKey
       };
@@ -738,13 +732,13 @@ function posterHtml(iid, imgInfo){
 
 
 
-  function queuePosterFetch(iid, titleClean, kind, cacheKey){
-    if(!titleClean) return;
-    const key = cacheKey || `${kind}:${titleClean.toLowerCase()}`;
+  function queuePosterFetch(iid, posterTitle, kind, cacheKey){
+    if(!posterTitle) return;
+    const key = cacheKey || `${kind}:${posterTitle.toLowerCase()}`;
     if(POSTER_LOCAL[key]) return;
     if(POSTER_QUEUE.some(x => x.key === key)) return;
 
-    POSTER_QUEUE.push({iid, titleClean, kind, key});
+    POSTER_QUEUE.push({iid, posterTitle, kind, key});
     if(!POSTER_TIMER) POSTER_TIMER = setTimeout(processPosterQueue, 60);
   }
 
@@ -758,7 +752,7 @@ function posterHtml(iid, imgInfo){
 
     for(const job of batch){
       try{
-        const url = `${API_BASE}/api/poster?title=${encodeURIComponent(job.titleClean)}&type=${encodeURIComponent(job.kind)}`;
+        const url = `${API_BASE}/api/poster?title=${encodeURIComponent(job.posterTitle)}&type=${encodeURIComponent(job.kind)}`;
         const r = await fetch(url, {headers, cache:"no-store"});
         if(!r.ok) continue;
         const j = await r.json();
@@ -1019,7 +1013,7 @@ function card(it){
 
     const imgInfo = resolveCardImage(it);
     if(imgInfo && imgInfo.needsFetch){
-      queuePosterFetch(iid, imgInfo.titleClean, imgInfo.kind, imgInfo.cacheKey);
+      queuePosterFetch(iid, imgInfo.posterTitle || imgInfo.titleClean, imgInfo.kind, imgInfo.cacheKey);
     }
 
     const favOn = isFav(iid);
