@@ -126,7 +126,7 @@
 
       <div class="row">
         <div class="badge good" id="statusBadge">● <span id="statusText">Conectando…</span></div>
-        <button class="tab" id="btnConfig" type="button" title="Configurar API/VIP">⚙️ Config</button>
+        <button class="tab" id="btnConfig" type="button" title="Configurar API">⚙️ Config</button>
       </div>
     </div>
 
@@ -158,7 +158,7 @@
         <option value="only">VIP: solo VIP (si tienes)</option>
       </select>
 
-      <div class="small">Auto-refresh cada 15 min • Favoritos guardados en tu dispositivo</div>
+      <div class="small">Auto-refresh cada 15 min • Favoritos sincronizados con tu cuenta VIP</div>
     </div>
   </div>
 </header>
@@ -176,13 +176,13 @@
   // ===== Config =====
   const params = new URLSearchParams(location.search);
 
-  // VIP persistente: ?vip=1 / ?vip=0
-  let VIP = (function(){
-    const v = (params.get("vip") || "").toLowerCase();
-    if(v === "1" || v === "true") localStorage.setItem("BCNTV_VIP", "1");
-    if(v === "0" || v === "false") localStorage.removeItem("BCNTV_VIP");
-    return localStorage.getItem("BCNTV_VIP") === "1";
+  let VIP = false;
+  let WEB_TOKEN = (function(){
+    const t = (params.get("token") || "").trim();
+    if(t) localStorage.setItem("BCNTV_WEB_TOKEN", t);
+    return (localStorage.getItem("BCNTV_WEB_TOKEN") || "").trim();
   })();
+  let SESSION = {ok:false, is_vip:false, favorites:[], vip_expires_at:null, vip_days_left:null};
 
   // Backend por defecto:
   // - En GitHub Pages (github.io) usamos el backend público.
@@ -211,9 +211,11 @@
   let API_URL = API_BASE + "/api/links";
 
   function applyUiConfig(){
-    document.getElementById("vipLine").innerHTML = "Estado: " + (VIP ? "<b>VIP</b>" : "<span style='color:var(--bad);font-weight:900'>No VIP</span>");
+    const extra = SESSION.vip_expires_at ? ` • vence: ${new Date(SESSION.vip_expires_at).toLocaleString()}` : "";
+    document.getElementById("vipLine").innerHTML = "Estado: " + (VIP ? "<b>VIP</b>" : "<span style='color:var(--bad);font-weight:900'>No VIP</span>") + extra;
     const keyInfo = API_KEY ? " (key: sí)" : " (key: no)";
-    document.getElementById("apiHint").textContent = "API: " + API_URL + keyInfo;
+    const tokenInfo = WEB_TOKEN ? " (token: sí)" : " (token: no)";
+    document.getElementById("apiHint").textContent = "API: " + API_URL + keyInfo + tokenInfo;
   }
   applyUiConfig();
 
@@ -261,24 +263,67 @@
       API_KEY = (localStorage.getItem("BCNTV_API_KEY") || "").trim();
     }
 
-    const vip = confirm("¿Activar VIP en este dispositivo?\nOK = VIP\nCancelar = No VIP");
-    if(vip) localStorage.setItem("BCNTV_VIP","1"); else localStorage.removeItem("BCNTV_VIP");
-    VIP = localStorage.getItem("BCNTV_VIP")==="1";
+    const token = prompt("Token Web (lo entrega el bot al abrir WebPremium):", WEB_TOKEN);
+    if(token !== null){
+      const t = (token || "").trim();
+      if(t) localStorage.setItem("BCNTV_WEB_TOKEN", t); else localStorage.removeItem("BCNTV_WEB_TOKEN");
+      WEB_TOKEN = (localStorage.getItem("BCNTV_WEB_TOKEN") || "").trim();
+    }
 
     applyUiConfig();
-    fetchData();
+    fetchSession().then(fetchData);
   });
-
   function loadFavs(){
     try{ return JSON.parse(localStorage.getItem("bcntv_favs")||"[]"); }
     catch(e){ return []; }
   }
   function saveFavs(){ localStorage.setItem("bcntv_favs", JSON.stringify(FAVS)); }
+  function authHeaders(){
+    const headers = {};
+    if(API_KEY) headers["x-api-key"] = API_KEY;
+    if(WEB_TOKEN) headers["Authorization"] = "Bearer " + WEB_TOKEN;
+    return headers;
+  }
+  async function fetchSession(){
+    try{
+      const r = await fetch(API_BASE + "/api/session", {cache:"no-store", headers: authHeaders()});
+      if(!r.ok) throw new Error("HTTP " + r.status);
+      const j = await r.json();
+      SESSION = j || {};
+      VIP = !!SESSION.is_vip;
+      FAVS = Array.isArray(SESSION.favorites) ? SESSION.favorites : loadFavs();
+      saveFavs();
+      applyUiConfig();
+      return SESSION;
+    }catch(e){
+      console.warn("session failed", e);
+      SESSION = {ok:false, is_vip:false, favorites:loadFavs()};
+      VIP = false;
+      FAVS = loadFavs();
+      applyUiConfig();
+      return SESSION;
+    }
+  }
   function isFav(id){ return FAVS.includes(id); }
-  function toggleFav(id){
+  async function toggleFav(id){
     vibrate(18);
-    if(isFav(id)) FAVS = FAVS.filter(x=>x!==id);
-    else FAVS.push(id);
+    try{
+      if(WEB_TOKEN){
+        const r = await fetch(API_BASE + "/api/favorites/toggle", {
+          method:"POST",
+          headers:{...authHeaders(), "Content-Type":"application/json"},
+          body: JSON.stringify({item_id:id})
+        });
+        if(!r.ok) throw new Error("HTTP " + r.status);
+        const j = await r.json();
+        FAVS = Array.isArray(j.items) ? j.items : FAVS;
+      }else{
+        if(isFav(id)) FAVS = FAVS.filter(x=>x!==id); else FAVS.push(id);
+      }
+    }catch(e){
+      console.warn("toggleFav failed", e);
+      if(isFav(id)) FAVS = FAVS.filter(x=>x!==id); else FAVS.push(id);
+    }
     saveFavs();
     render();
   }
@@ -293,8 +338,7 @@
   async function fetchData(){
     try{
       setStatus(true, "Cargando…");
-      const headers = {};
-      if(API_KEY) headers["x-api-key"] = API_KEY;
+      const headers = authHeaders();
 
       const r = await fetch(API_URL, {cache:"no-store", headers});
       if(!r.ok) throw new Error("HTTP " + r.status);
@@ -1021,8 +1065,7 @@ for(const job of batch){
   async function downloadIcs(itemId, mins){
     try{
       vibrate(12);
-      const headers = {};
-      if(API_KEY) headers["x-api-key"] = API_KEY;
+      const headers = authHeaders();
       const url = `${API_BASE}/api/ics/${encodeURIComponent(itemId)}?mins=${mins}`;
       const r = await fetch(url, {headers});
       if(!r.ok) throw new Error("HTTP " + r.status);
