@@ -182,7 +182,7 @@
     if(t) localStorage.setItem("BCNTV_WEB_TOKEN", t);
     return (localStorage.getItem("BCNTV_WEB_TOKEN") || "").trim();
   })();
-  let SESSION = {ok:false, is_vip:false, favorites:[], vip_expires_at:null, vip_days_left:null};
+  let SESSION = {ok:false, is_vip:false, is_admin:false, favorites:[], vip_expires_at:null, vip_days_left:null};
 
   // Backend por defecto:
   // - En GitHub Pages (github.io) usamos el backend público.
@@ -211,11 +211,25 @@
   let API_URL = API_BASE + "/api/links";
 
   function applyUiConfig(){
-    const extra = SESSION.vip_expires_at ? ` • vence: ${new Date(SESSION.vip_expires_at).toLocaleString()}` : "";
-    document.getElementById("vipLine").innerHTML = "Estado: " + (VIP ? "<b>VIP</b>" : "<span style='color:var(--bad);font-weight:900'>No VIP</span>") + extra;
-    const keyInfo = API_KEY ? " (key: sí)" : " (key: no)";
-    const tokenInfo = WEB_TOKEN ? " (token: sí)" : " (token: no)";
-    document.getElementById("apiHint").textContent = "API: " + API_URL + keyInfo + tokenInfo;
+    const pieces = [];
+    if(SESSION.is_admin) pieces.push("<b>ADMIN</b>");
+    if(VIP) pieces.push("<b>VIP</b>");
+    if(!pieces.length) pieces.push("<span style='color:var(--bad);font-weight:900'>No VIP</span>");
+
+    const extra = [];
+    if(SESSION.vip_days_left !== null && SESSION.vip_days_left !== undefined && Number.isFinite(Number(SESSION.vip_days_left))){
+      extra.push(`días restantes: ${Number(SESSION.vip_days_left)}`);
+    }
+    if(SESSION.vip_expires_at){
+      try{ extra.push(`vence: ${new Date(SESSION.vip_expires_at).toLocaleString()}`); }catch(e){}
+    }
+
+    document.getElementById("vipLine").innerHTML = "Estado: " + pieces.join(" • ") + (extra.length ? (" • " + extra.join(" • ")) : "");
+
+    const keyInfo = API_KEY ? "key: sí" : "key: no";
+    const tokenInfo = WEB_TOKEN ? "token: sí" : "token: no";
+    const sessInfo = SESSION.ok ? `sesión: ok${SESSION.is_admin ? ' • admin' : ''}${SESSION.is_vip ? ' • vip' : ''}` : "sesión: pendiente";
+    document.getElementById("apiHint").textContent = `API: ${API_URL} • ${keyInfo} • ${tokenInfo} • ${sessInfo}`;
   }
   applyUiConfig();
 
@@ -278,6 +292,32 @@
     catch(e){ return []; }
   }
   function saveFavs(){ localStorage.setItem("bcntv_favs", JSON.stringify(FAVS)); }
+  function saveDataCache(items){
+    try{
+      localStorage.setItem("BCNTV_CACHE_ITEMS", JSON.stringify(items || []));
+      localStorage.setItem("BCNTV_CACHE_TS", String(Date.now()));
+    }catch(e){}
+  }
+  function loadDataCache(){
+    try{
+      const raw = localStorage.getItem("BCNTV_CACHE_ITEMS");
+      if(!raw) return {items:[], ts:0, ageMs:Infinity};
+      const items = JSON.parse(raw) || [];
+      const ts = parseInt(localStorage.getItem("BCNTV_CACHE_TS") || "0", 10) || 0;
+      return {items, ts, ageMs: ts ? Math.max(0, Date.now() - ts) : Infinity};
+    }catch(e){
+      return {items:[], ts:0, ageMs:Infinity};
+    }
+  }
+  function formatAge(ms){
+    if(!Number.isFinite(ms) || ms < 0) return "sin fecha";
+    const mins = Math.round(ms / 60000);
+    if(mins < 60) return `${mins} min`;
+    const hrs = Math.round(mins / 60);
+    if(hrs < 48) return `${hrs} h`;
+    const days = Math.round(hrs / 24);
+    return `${days} d`;
+  }
   function authHeaders(){
     const headers = {};
     if(API_KEY) headers["x-api-key"] = API_KEY;
@@ -287,9 +327,14 @@
   async function fetchSession(){
     try{
       const r = await fetch(API_BASE + "/api/session", {cache:"no-store", headers: authHeaders()});
-      if(!r.ok) throw new Error("HTTP " + r.status);
+      if(!r.ok){
+        const err = new Error("HTTP " + r.status);
+        err.status = r.status;
+        throw err;
+      }
       const j = await r.json();
       SESSION = j || {};
+      SESSION.ok = true;
       VIP = !!SESSION.is_vip;
       FAVS = Array.isArray(SESSION.favorites) ? SESSION.favorites : loadFavs();
       saveFavs();
@@ -297,7 +342,13 @@
       return SESSION;
     }catch(e){
       console.warn("session failed", e);
-      SESSION = {ok:false, is_vip:false, favorites:loadFavs()};
+      SESSION = {
+        ok:false,
+        is_vip:false,
+        is_admin:false,
+        favorites:loadFavs(),
+        error_status: e && e.status ? e.status : null,
+      };
       VIP = false;
       FAVS = loadFavs();
       applyUiConfig();
@@ -341,24 +392,39 @@
       const headers = authHeaders();
 
       const r = await fetch(API_URL, {cache:"no-store", headers});
-      if(!r.ok) throw new Error("HTTP " + r.status);
+      if(!r.ok){
+        const err = new Error("HTTP " + r.status);
+        err.status = r.status;
+        throw err;
+      }
       const j = await r.json();
       DATA = Array.isArray(j) ? j : [];
 
-      try{ localStorage.setItem("BCNTV_CACHE_ITEMS", JSON.stringify(DATA)); }catch(e){}
+      saveDataCache(DATA);
       setStatus(true, "Online (" + DATA.length + ")");
       render();
     }catch(e){
       console.error(e);
-      const cached = localStorage.getItem("BCNTV_CACHE_ITEMS");
-      if(cached){
-        try{
-          DATA = JSON.parse(cached) || [];
-          setStatus(false, "Offline (caché " + DATA.length + ")");
-          render();
-          return;
-        }catch(_){}
+      const status = e && e.status ? e.status : 0;
+      const cache = loadDataCache();
+      const cacheIsFresh = Number.isFinite(cache.ageMs) && cache.ageMs <= (6 * 60 * 60 * 1000);
+
+      if(status === 401 || status === 403){
+        DATA = [];
+        setStatus(false, WEB_TOKEN ? "Sesión sin acceso VIP" : "Abre desde Telegram para validar VIP");
+        grid.innerHTML = `<div class="section"><h2>Acceso requerido <span class="sub">— valida tu sesión desde Telegram o revisa tu token web</span></h2></div>`;
+        bindActions();
+        return;
       }
+
+      if(cache.items.length && cacheIsFresh){
+        DATA = cache.items;
+        setStatus(false, `Offline (caché ${DATA.length} • ${formatAge(cache.ageMs)})`);
+        render();
+        return;
+      }
+
+      DATA = [];
       setStatus(false, "Offline");
       render();
     }
@@ -1333,7 +1399,16 @@ const datesAll = [...byDate.keys()].sort((a,b)=>{
     });
   }
 
-  fetchData();
-  setInterval(fetchData, 15 * 60 * 1000);</script>
+  async function boot(){
+    setStatus(true, "Validando sesión…");
+    await fetchSession();
+    await fetchData();
+  }
+
+  boot();
+  setInterval(async ()=>{
+    await fetchSession();
+    await fetchData();
+  }, 15 * 60 * 1000);</script>
 </body>
 </html>
