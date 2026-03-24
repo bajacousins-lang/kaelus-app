@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <meta name="referrer" content="same-origin"/>
+  <meta name="referrer" content="strict-origin-when-cross-origin"/>
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://kaelus-bot.onrender.com; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'"/>
   <title>BCNTV WebPremium</title>
   <style>
@@ -179,12 +179,9 @@
   const params = new URLSearchParams(location.search);
 
   let VIP = false;
+  const RAW_TICKET = (params.get("ticket") || "").trim();
   const RAW_TOKEN = (params.get("token") || "").trim();
-  if (RAW_TOKEN) {
-    sessionStorage.setItem("BCNTV_WEB_TOKEN", RAW_TOKEN);
-    const cleanUrl = location.origin + location.pathname + location.hash;
-    history.replaceState({}, document.title, cleanUrl);
-  }
+  if (RAW_TOKEN) sessionStorage.setItem("BCNTV_WEB_TOKEN", RAW_TOKEN);
   let WEB_TOKEN = (sessionStorage.getItem("BCNTV_WEB_TOKEN") || "").trim();
   let SESSION = {ok:false, is_vip:false, favorites:[], vip_expires_at:null, vip_days_left:null};
 
@@ -214,6 +211,7 @@
     const sessionInfo = SESSION && SESSION.ok ? ` • sesión: ok${SESSION.is_admin ? " • admin" : ""}${SESSION.is_vip ? " • vip" : ""}` : " • sesión: no";
     document.getElementById("apiHint").textContent = "API: " + API_URL + " • " + tokenInfo + sessionInfo;
   }
+  clearSensitiveUrlParams();
   applyUiConfig();
 
   const grid = document.getElementById("grid");
@@ -245,7 +243,7 @@
   document.getElementById("btnConfig").addEventListener("click", async()=>{
     try{ vibrate(12); }catch(e){}
     const actions = [
-      "1) Pegar/reemplazar token web",
+      "1) Pegar/reemplazar token web manual",
       (IS_LOCAL_DEV ? "2) Cambiar API Base (solo dev)" : null),
       "3) Limpiar sesión y caché",
       "4) Cancelar"
@@ -284,6 +282,11 @@ Elige una opción:`, "4");
     }
 
     if(opt === "3"){
+      try{
+        if(WEB_TOKEN){
+          await fetch(API_BASE + "/api/session/logout", {method:"POST", cache:"no-store", headers: authHeaders()});
+        }
+      }catch(e){}
       sessionStorage.removeItem("BCNTV_WEB_TOKEN");
       sessionStorage.removeItem("BCNTV_API_BASE");
       localStorage.removeItem("BCNTV_CACHE_ITEMS");
@@ -292,6 +295,7 @@ Elige una opción:`, "4");
       WEB_TOKEN = "";
       API_BASE = DEFAULT_API_BASE.replace(/\/$/,"");
       API_URL = API_BASE + "/api/links";
+      clearSensitiveUrlParams();
       applyUiConfig();
       await fetchSession();
       await fetchData();
@@ -306,6 +310,41 @@ Elige una opción:`, "4");
     const headers = {};
     if(WEB_TOKEN) headers["Authorization"] = "Bearer " + WEB_TOKEN;
     return headers;
+  }
+  function clearSensitiveUrlParams(){
+    const url = new URL(location.href);
+    let dirty = false;
+    ["ticket","token","api","key"].forEach(k=>{
+      if(url.searchParams.has(k)){
+        url.searchParams.delete(k);
+        dirty = true;
+      }
+    });
+    if(dirty){
+      history.replaceState({}, document.title, url.pathname + (url.search || "") + url.hash);
+    }
+  }
+  async function exchangeTicketIfNeeded(){
+    if(!RAW_TICKET) return null;
+    const r = await fetch(API_BASE + "/api/web/exchange", {
+      method:"POST",
+      cache:"no-store",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ticket: RAW_TICKET})
+    });
+    if(!r.ok) throw new Error("TICKET_HTTP_" + r.status);
+    const j = await r.json();
+    const token = String((j||{}).token || "").trim();
+    if(!token) throw new Error("TICKET_NO_TOKEN");
+    sessionStorage.setItem("BCNTV_WEB_TOKEN", token);
+    WEB_TOKEN = token;
+    SESSION = j || SESSION;
+    VIP = !!SESSION.is_vip;
+    FAVS = Array.isArray(SESSION.favorites) ? SESSION.favorites : loadFavs();
+    saveFavs();
+    clearSensitiveUrlParams();
+    applyUiConfig();
+    return j;
   }
   async function fetchSession(){
     try{
@@ -1391,9 +1430,21 @@ const datesAll = [...byDate.keys()].sort((a,b)=>{
   }
 
   async function boot(){
-    setStatus(true, "Validando sesión…");
-    await fetchSession();
-    await fetchData();
+    try{
+      setStatus(true, "Validando acceso…");
+      await exchangeTicketIfNeeded();
+      await fetchSession();
+      await fetchData();
+    }catch(e){
+      console.warn("boot failed", e);
+      if(String((e && e.message) || "").startsWith("TICKET_HTTP_")){
+        sessionStorage.removeItem("BCNTV_WEB_TOKEN");
+        WEB_TOKEN = "";
+      }
+      setStatus(false, "Acceso no válido");
+      await fetchSession();
+      await fetchData();
+    }
   }
 
   boot();
