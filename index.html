@@ -3,6 +3,8 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="referrer" content="same-origin"/>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://kaelus-bot.onrender.com; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'"/>
   <title>BCNTV WebPremium</title>
   <style>
     :root{
@@ -116,7 +118,7 @@
   <div class="wrap">
     <div class="top">
       <div class="brand">
-        <img class="logo" id="logo" src="./logo.png" alt="logo"
+        <img class="logo" id="logo" src="./logo.png" alt="logo" referrerpolicy="same-origin"
              onerror="this.src='https://bajacousins-lang.github.io/kaelus-app/logo.png'"/>
         <div>
           <div class="title">BCNTV WebPremium</div>
@@ -177,59 +179,40 @@
   const params = new URLSearchParams(location.search);
 
   let VIP = false;
-  let WEB_TOKEN = (function(){
-    const t = (params.get("token") || "").trim();
-    if(t) localStorage.setItem("BCNTV_WEB_TOKEN", t);
-    return (localStorage.getItem("BCNTV_WEB_TOKEN") || "").trim();
-  })();
-  let SESSION = {ok:false, is_vip:false, is_admin:false, favorites:[], vip_expires_at:null, vip_days_left:null};
+  const RAW_TOKEN = (params.get("token") || "").trim();
+  if (RAW_TOKEN) {
+    sessionStorage.setItem("BCNTV_WEB_TOKEN", RAW_TOKEN);
+    const cleanUrl = location.origin + location.pathname + location.hash;
+    history.replaceState({}, document.title, cleanUrl);
+  }
+  let WEB_TOKEN = (sessionStorage.getItem("BCNTV_WEB_TOKEN") || "").trim();
+  let SESSION = {ok:false, is_vip:false, favorites:[], vip_expires_at:null, vip_days_left:null};
 
-  // Backend por defecto:
-  // - En GitHub Pages (github.io) usamos el backend público.
-  // - Si se hospeda en otro dominio (p.ej. el mismo backend), usamos location.origin.
   const IS_GH_PAGES = ((location.hostname || "").toLowerCase().endsWith("github.io"));
+  const IS_LOCAL_DEV = ["localhost", "127.0.0.1"].includes((location.hostname || "").toLowerCase()) || location.protocol === "file:";
   const DEFAULT_API_BASE = (function(){
     if(location.protocol === "file:") return "https://kaelus-bot.onrender.com";
     if(IS_GH_PAGES) return "https://kaelus-bot.onrender.com";
     return location.origin;
   })();
 
-  // API base persistente + soporte ?api=...
-  let API_BASE = (function(){
-    const p = (params.get("api") || "").trim();
-    if(p) localStorage.setItem("BCNTV_API_BASE", p);
-    return (localStorage.getItem("BCNTV_API_BASE") || DEFAULT_API_BASE).replace(/\/$/,"");
-  })();
-
-  // API key opcional (x-api-key) + ?key=...
-  let API_KEY = (function(){
-    const k = (params.get("key") || "").trim();
-    if(k) localStorage.setItem("BCNTV_API_KEY", k);
-    return (localStorage.getItem("BCNTV_API_KEY") || "").trim();
-  })();
+  let API_BASE = DEFAULT_API_BASE.replace(/\/$/,"");
+  if (IS_LOCAL_DEV) {
+    const devApi = (params.get("api") || sessionStorage.getItem("BCNTV_API_BASE") || "").trim();
+    if (devApi) {
+      sessionStorage.setItem("BCNTV_API_BASE", devApi);
+      API_BASE = devApi.replace(/\/$/,"");
+    }
+  }
 
   let API_URL = API_BASE + "/api/links";
 
   function applyUiConfig(){
-    const pieces = [];
-    if(SESSION.is_admin) pieces.push("<b>ADMIN</b>");
-    if(VIP) pieces.push("<b>VIP</b>");
-    if(!pieces.length) pieces.push("<span style='color:var(--bad);font-weight:900'>No VIP</span>");
-
-    const extra = [];
-    if(SESSION.vip_days_left !== null && SESSION.vip_days_left !== undefined && Number.isFinite(Number(SESSION.vip_days_left))){
-      extra.push(`días restantes: ${Number(SESSION.vip_days_left)}`);
-    }
-    if(SESSION.vip_expires_at){
-      try{ extra.push(`vence: ${new Date(SESSION.vip_expires_at).toLocaleString()}`); }catch(e){}
-    }
-
-    document.getElementById("vipLine").innerHTML = "Estado: " + pieces.join(" • ") + (extra.length ? (" • " + extra.join(" • ")) : "");
-
-    const keyInfo = API_KEY ? "key: sí" : "key: no";
+    const extra = SESSION.vip_expires_at ? ` • vence: ${new Date(SESSION.vip_expires_at).toLocaleString()}` : "";
+    document.getElementById("vipLine").textContent = "Estado: " + (VIP ? "VIP" : "No VIP") + extra;
     const tokenInfo = WEB_TOKEN ? "token: sí" : "token: no";
-    const sessInfo = SESSION.ok ? `sesión: ok${SESSION.is_admin ? ' • admin' : ''}${SESSION.is_vip ? ' • vip' : ''}` : "sesión: pendiente";
-    document.getElementById("apiHint").textContent = `API: ${API_URL} • ${keyInfo} • ${tokenInfo} • ${sessInfo}`;
+    const sessionInfo = SESSION && SESSION.ok ? ` • sesión: ok${SESSION.is_admin ? " • admin" : ""}${SESSION.is_vip ? " • vip" : ""}` : " • sesión: no";
+    document.getElementById("apiHint").textContent = "API: " + API_URL + " • " + tokenInfo + sessionInfo;
   }
   applyUiConfig();
 
@@ -259,82 +242,77 @@
   sportsSub.addEventListener("change", ()=> render());
   vipFilter.addEventListener("change", ()=> render());
 
-  document.getElementById("btnConfig").addEventListener("click", ()=>{
+  document.getElementById("btnConfig").addEventListener("click", async()=>{
     try{ vibrate(12); }catch(e){}
-    const api = prompt("API Base URL (ej: https://kaelus-bot.onrender.com)", API_BASE);
-    if(api !== null){
-      const v = (api || "").trim();
-      if(v) localStorage.setItem("BCNTV_API_BASE", v);
-      API_BASE = (localStorage.getItem("BCNTV_API_BASE") || DEFAULT_API_BASE).replace(/\/$/,"");
+    const actions = [
+      "1) Pegar/reemplazar token web",
+      (IS_LOCAL_DEV ? "2) Cambiar API Base (solo dev)" : null),
+      "3) Limpiar sesión y caché",
+      "4) Cancelar"
+    ].filter(Boolean).join("\n");
+
+    const opt = prompt(`Configuración segura
+
+${actions}
+
+Elige una opción:`, "4");
+    if(!opt) return;
+
+    if(opt === "1"){
+      const t = prompt("Pega el token web (Bearer) generado por el bot:", WEB_TOKEN || "");
+      if(t === null) return;
+      const clean = String(t || "").trim();
+      if(clean) sessionStorage.setItem("BCNTV_WEB_TOKEN", clean); else sessionStorage.removeItem("BCNTV_WEB_TOKEN");
+      WEB_TOKEN = (sessionStorage.getItem("BCNTV_WEB_TOKEN") || "").trim();
+      applyUiConfig();
+      await fetchSession();
+      await fetchData();
+      return;
+    }
+
+    if(opt === "2" && IS_LOCAL_DEV){
+      const api = prompt("API Base URL (solo desarrollo)", API_BASE);
+      if(api === null) return;
+      const v = String(api || "").trim().replace(/\/$/,"");
+      if(v) sessionStorage.setItem("BCNTV_API_BASE", v); else sessionStorage.removeItem("BCNTV_API_BASE");
+      API_BASE = (sessionStorage.getItem("BCNTV_API_BASE") || DEFAULT_API_BASE).replace(/\/$/,"");
       API_URL = API_BASE + "/api/links";
+      applyUiConfig();
+      await fetchSession();
+      await fetchData();
+      return;
     }
 
-    const key = prompt("API Key (x-api-key). Deja vacío si no usas:", API_KEY);
-    if(key !== null){
-      const k = (key || "").trim();
-      if(k) localStorage.setItem("BCNTV_API_KEY", k);
-      else localStorage.removeItem("BCNTV_API_KEY");
-      API_KEY = (localStorage.getItem("BCNTV_API_KEY") || "").trim();
+    if(opt === "3"){
+      sessionStorage.removeItem("BCNTV_WEB_TOKEN");
+      sessionStorage.removeItem("BCNTV_API_BASE");
+      localStorage.removeItem("BCNTV_CACHE_ITEMS");
+      localStorage.removeItem("BCNTV_POSTER_CACHE");
+      localStorage.removeItem("bcntv_favs");
+      WEB_TOKEN = "";
+      API_BASE = DEFAULT_API_BASE.replace(/\/$/,"");
+      API_URL = API_BASE + "/api/links";
+      applyUiConfig();
+      await fetchSession();
+      await fetchData();
     }
-
-    const token = prompt("Token Web (lo entrega el bot al abrir WebPremium):", WEB_TOKEN);
-    if(token !== null){
-      const t = (token || "").trim();
-      if(t) localStorage.setItem("BCNTV_WEB_TOKEN", t); else localStorage.removeItem("BCNTV_WEB_TOKEN");
-      WEB_TOKEN = (localStorage.getItem("BCNTV_WEB_TOKEN") || "").trim();
-    }
-
-    applyUiConfig();
-    fetchSession().then(fetchData);
   });
   function loadFavs(){
     try{ return JSON.parse(localStorage.getItem("bcntv_favs")||"[]"); }
     catch(e){ return []; }
   }
   function saveFavs(){ localStorage.setItem("bcntv_favs", JSON.stringify(FAVS)); }
-  function saveDataCache(items){
-    try{
-      localStorage.setItem("BCNTV_CACHE_ITEMS", JSON.stringify(items || []));
-      localStorage.setItem("BCNTV_CACHE_TS", String(Date.now()));
-    }catch(e){}
-  }
-  function loadDataCache(){
-    try{
-      const raw = localStorage.getItem("BCNTV_CACHE_ITEMS");
-      if(!raw) return {items:[], ts:0, ageMs:Infinity};
-      const items = JSON.parse(raw) || [];
-      const ts = parseInt(localStorage.getItem("BCNTV_CACHE_TS") || "0", 10) || 0;
-      return {items, ts, ageMs: ts ? Math.max(0, Date.now() - ts) : Infinity};
-    }catch(e){
-      return {items:[], ts:0, ageMs:Infinity};
-    }
-  }
-  function formatAge(ms){
-    if(!Number.isFinite(ms) || ms < 0) return "sin fecha";
-    const mins = Math.round(ms / 60000);
-    if(mins < 60) return `${mins} min`;
-    const hrs = Math.round(mins / 60);
-    if(hrs < 48) return `${hrs} h`;
-    const days = Math.round(hrs / 24);
-    return `${days} d`;
-  }
   function authHeaders(){
     const headers = {};
-    if(API_KEY) headers["x-api-key"] = API_KEY;
     if(WEB_TOKEN) headers["Authorization"] = "Bearer " + WEB_TOKEN;
     return headers;
   }
   async function fetchSession(){
     try{
       const r = await fetch(API_BASE + "/api/session", {cache:"no-store", headers: authHeaders()});
-      if(!r.ok){
-        const err = new Error("HTTP " + r.status);
-        err.status = r.status;
-        throw err;
-      }
+      if(!r.ok) throw new Error("HTTP " + r.status);
       const j = await r.json();
       SESSION = j || {};
-      SESSION.ok = true;
       VIP = !!SESSION.is_vip;
       FAVS = Array.isArray(SESSION.favorites) ? SESSION.favorites : loadFavs();
       saveFavs();
@@ -342,13 +320,11 @@
       return SESSION;
     }catch(e){
       console.warn("session failed", e);
-      SESSION = {
-        ok:false,
-        is_vip:false,
-        is_admin:false,
-        favorites:loadFavs(),
-        error_status: e && e.status ? e.status : null,
-      };
+      if ([401,403].includes(Number((e && String(e.message||'').replace(/\D+/g,'')) || 0))) {
+        sessionStorage.removeItem("BCNTV_WEB_TOKEN");
+        WEB_TOKEN = "";
+      }
+      SESSION = {ok:false, is_vip:false, favorites:loadFavs()};
       VIP = false;
       FAVS = loadFavs();
       applyUiConfig();
@@ -386,6 +362,23 @@
     badge.style.borderColor = ok ? "rgba(24,210,107,.5)" : "rgba(255,107,107,.5)";
   }
 
+  const CACHE_TTL_MS = 30 * 60 * 1000;
+  function writeItemsCache(items){
+    try{
+      localStorage.setItem("BCNTV_CACHE_ITEMS", JSON.stringify({ts: Date.now(), items: Array.isArray(items) ? items : []}));
+    }catch(e){}
+  }
+  function readItemsCache(){
+    try{
+      const raw = localStorage.getItem("BCNTV_CACHE_ITEMS");
+      if(!raw) return null;
+      const parsed = JSON.parse(raw);
+      if(Array.isArray(parsed)) return {ts: 0, items: parsed}; // back-compat
+      if(!parsed || !Array.isArray(parsed.items)) return null;
+      return parsed;
+    }catch(e){ return null; }
+  }
+
   async function fetchData(){
     try{
       setStatus(true, "Cargando…");
@@ -400,32 +393,31 @@
       const j = await r.json();
       DATA = Array.isArray(j) ? j : [];
 
-      saveDataCache(DATA);
+      writeItemsCache(DATA);
       setStatus(true, "Online (" + DATA.length + ")");
       render();
     }catch(e){
       console.error(e);
-      const status = e && e.status ? e.status : 0;
-      const cache = loadDataCache();
-      const cacheIsFresh = Number.isFinite(cache.ageMs) && cache.ageMs <= (6 * 60 * 60 * 1000);
-
+      const status = Number(e && e.status || 0);
       if(status === 401 || status === 403){
         DATA = [];
-        setStatus(false, WEB_TOKEN ? "Sesión sin acceso VIP" : "Abre desde Telegram para validar VIP");
-        grid.innerHTML = `<div class="section"><h2>Acceso requerido <span class="sub">— valida tu sesión desde Telegram o revisa tu token web</span></h2></div>`;
-        bindActions();
-        return;
-      }
-
-      if(cache.items.length && cacheIsFresh){
-        DATA = cache.items;
-        setStatus(false, `Offline (caché ${DATA.length} • ${formatAge(cache.ageMs)})`);
+        setStatus(false, status === 401 ? "Sesión inválida" : "VIP requerido");
         render();
         return;
       }
 
-      DATA = [];
+      const cached = readItemsCache();
+      if(cached && Array.isArray(cached.items) && cached.items.length){
+        const age = Date.now() - Number(cached.ts || 0);
+        if(age <= CACHE_TTL_MS){
+          DATA = cached.items;
+          setStatus(false, "Offline (caché reciente " + DATA.length + ")");
+          render();
+          return;
+        }
+      }
       setStatus(false, "Offline");
+      DATA = [];
       render();
     }
   }
@@ -905,7 +897,6 @@ function posterHtml(iid, imgInfo){
     if(!batch.length) return;
 
     const headers = {};
-    if(API_KEY) headers["x-api-key"] = API_KEY;
 
     
 for(const job of batch){
